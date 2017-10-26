@@ -8,15 +8,12 @@
           <strong> {{message}} </strong>
       </div>
     {% endfor %}
+    <div class="col-md-8 col-md-offset-4">
+        <a href="{{url_for('load_patient_format')}}">View Example File Format</a>
+    </div>
     {{ wtf.quick_form(form, form_type='horizontal', horizontal_columns=('md', 4, 4), button_map={'submit': 'success'}) }}
 {% block footer %}
 {{super()}}
 {% endblock %}
 </div> <!-- /container -->
-{% endblock %}
-{% block scripts %}
-{{super()}}
-<script type="text/javascript">
-  $('#lastNPVisit, #lastMDVisit, #admittance').datepicker()
-</script>
 {% endblock %}

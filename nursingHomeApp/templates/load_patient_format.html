@@ -1,0 +1,39 @@
+{% import 'bootstrap/wtf.html' as wtf %}
+{% extends "base_authenticated.html" %}
+{% block content %}
+  <div class="container">
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="alert alert-{{category}} page-alert">
+          <button data-dismiss="alert" type="button" class="close"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+          <strong> {{message}} </strong>
+      </div>
+    {% endfor %}
+    <div class="panel panel-default" style="white-space: nowrap;">
+      <div class="panel-heading">Example Patient CSV File <a href="{{url_for('static', filename='patients_template.csv')}}" download>(Download)</a></div>
+      <ul class="list-group">
+        <li class="list-group-item">
+                Patient's First Name, Patient's Last Name, Room Number, Patient's Status, Patient's Doctor, Last Date Visited by Doctor, Patient's Nurse, Last Date visited by Nurse, Admittance Date<br>
+                John, Doe, 233, Long Term Care, Doctor Smith, 2017-05-05, Nurse Smith, 2017-04-04,<br>
+                Jane, Doe, 433, Skilled Care, Doctor Smith,, NurseSmith, 2017-04-03, 2017-02-02<br>
+                John, Smith, 114, New Admission,Doctor Smith,2017-08-08,,,
+        </li>
+        </ul>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">Explanation</div>
+        <ul class="list-group">
+            <li class="list-group-item">File must be in csv format, and have a header row followed by any number of rows of data.</li>
+            <li class="list-group-item">Each row of data must have the following fields, in this order (leave optional fields blank if not applicable):<br><br>
+                Patient's First Name (Required), Patient's Last Name(Required), Room Number(Required), Patient's Status(Required), Patient's Doctor(Required), Last Date Visited by Doctor(Optional), Patient's Nurse(Optional), Last Date visited by Nurse(Optional), Admittance Date(Optional)
+            </li>
+            <li class="list-group-item">Patient's Status Must be one of the Following: Long Term Care, Skilled Care, New Admission, Discharged
+            </li>
+            <li class="list-group-item">Dates must be in the format: YYYY-mm-dd. Ex: 2017-10-20</li>
+            <li class="list-group-item">Any Doctor or Nurse named in the file must have been added as a user for visitMinder.</li>
+        </ul>
+    </div>
+{% block footer %}
+{{super()}}
+{% endblock %}
+</div> <!-- /container -->
+{% endblock %}

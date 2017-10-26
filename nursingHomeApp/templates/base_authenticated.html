@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block head %}
+{{super()}}
+<link rel="stylesheet" type="text/css" href="/static/navbar.css"/>
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/css/bootstrap-datepicker.css">
+{% endblock %}
+{% block navbar %}
+ <nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <span class="navbar-brand">visitMinder</span>
+      <span class="navbar-brand-img"><img src="http://placehold.it/150x50&text=Logo" alt=""></span>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        {% if current_user.role not in ['Medical Doctor', 'Nurse Practitioner'] %}
+        <li class="dropdown {% if request.endpoint in ['add_patient', 'view_patients', 'update_patient', 'load_patient'] %} active {% endif %}">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Patients <span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li {% if request.endpoint == 'add_patient' %} class="active" {% endif %}><a href="{{url_for('add_patient')}}">Add Patient</a></li>
+            <li {% if request.endpoint == 'view_patients' %} class="active" {% endif %}><a href="{{url_for('view_patients', floor=current_user.floor)}}">View Patients</a></li>
+            <li {% if request.endpoint == 'load_patient' %} class="active" {% endif %}><a href="{{url_for('load_patient')}}">Bulk Load Patients</a></li>
+          </ul>
+        </li>
+        {% else %}
+        <li {% if request.endpoint == 'view_patients' %} class="active" {% endif %}><a href="{{url_for('view_patients', floor=current_user.floor)}}">View Your Patients</a></li>
+        {% endif %}
+        {% if current_user.role in ['Admin', 'Clerk'] %}
+          <li class="dropdown {% if request.endpoint in ['add_user', 'view_users'] %} active {% endif %}">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">User Management <span class="caret"></span></a>
+            <ul class="dropdown-menu">
+              <li {% if request.endpoint == 'add_user' %} class="active" {% endif %}><a href="{{url_for('add_user')}}">Add User</a></li>
+                <li {% if request.endpoint == 'view_users' %} class="active" {% endif %}>
+                <a href="{{url_for('view_users')}}">
+                  {% if current_user.role == 'Clerk' %}View Clinicians{% else %} View Users {% endif %}
+                </a></li>
+            </ul>
+          </li>
+        {% endif %}
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Visits <span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li><a href="#">Add Visits</a></li>
+            <li><a href="#">View Visit History</a></li>
+          </ul>
+        </li>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                  <span class="glyphicon glyphicon-user"></span> 
+                  <strong>{{current_user.first}}</strong>
+                  <span class="glyphicon glyphicon-chevron-down"></span>
+              </a>
+              <ul class="dropdown-menu">
+                  <li>
+                      <div class="navbar-login">
+                          <div class="row">
+                              <div class="col-lg-4">
+                                  <p class="text-center">
+                                      <span class="glyphicon glyphicon-user icon-size"></span>
+                                  </p>
+                              </div>
+                              <div class="col-lg-8">
+                                  <p class="text-left"><strong>{{current_user.first + ' ' + current_user.last}}</strong></p>
+                                  <p class="text-left small">{{current_user.email}}</p>
+                                  <p class="text-left">
+                                      <a href="#" class="btn btn-primary btn-block btn-sm">My Account</a>
+                                  </p>
+                                  <p class="text-left">
+                                      <a href="{{url_for('notifications')}}" class="btn btn-primary btn-block btn-sm">My Notifications</a>
+                                  </p>
+                              </div>
+                          </div>
+                      </div>
+                  </li>
+                  <li class="divider"></li>
+                  <li>
+                      <div class="navbar-login navbar-login-session">
+                          <div class="row">
+                              <div class="col-lg-12">
+                                  <p>
+                                      <a href="{{url_for('logout')}}" class="btn btn-danger btn-block">Logout</a>
+                                  </p>
+                              </div>
+                          </div>
+                      </div>
+                  </li>
+              </ul>
+          </li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container-fluid -->
+</nav>
+{% endblock %}
+{% block scripts %}
+{{super()}}
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs/dt-1.10.15/datatables.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/js/bootstrap-datepicker.js"></script>
+<script type="text/javascript">
+  $.fn.datepicker.defaults.format = "yyyy-mm-dd";
+</script>
+{% endblock %}

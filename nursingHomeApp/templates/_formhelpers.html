@@ -1,0 +1,17 @@
+{% macro render_field(field) %}
+  <div class="form-group">
+    {{ field.label(class='control-label col-md-4') }}
+    <div class="col-md-4">
+      {{ field(class='form-control')|safe }}
+      {% if field.errors %}
+        <div class="alert alert-danger" role="alert">
+          <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+          <span class="sr-only">Error:</span>
+            {% for error in field.errors %}
+              <span>{{ error }}</span>
+            {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endmacro %}
