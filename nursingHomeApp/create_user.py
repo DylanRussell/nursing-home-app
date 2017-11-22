@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-"""Create a new admin user able to view the /reports endpoint."""
 from __future__ import absolute_import
 import sys
 from nursingHomeApp import app, bcrypt, mysql

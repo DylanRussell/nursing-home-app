@@ -1,0 +1,45 @@
+{% extends "base_authenticated.html" %}
+{% block content %}
+  <div class="container">
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="alert alert-{{category}} page-alert">
+          <button data-dismiss="alert" type="button" class="close"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+          <strong> {{message}} </strong>
+      </div>
+    {% endfor %}
+      <div class="col-md-12">
+        <br><hr>
+        <table id="upcoming" class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Room</th>
+              <th>Last Visit</th>
+              <th>Overdue Date</th>
+              <th># of Days</th>
+            </tr>
+          </thead>
+            {% for pName, rm, lvDesc, nvDesc, days in patients %}
+              <tr class="{{'danger' if days <= 0}}">
+                <td>{{pName}}</td>
+                <td>{{rm}}</td>
+                <td>{{lvDesc}}</td>
+                <td>{{nvDesc}}</td>
+                <td>{{days}}</td>
+              </tr>
+            {% endfor %}
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+{% block footer %}
+{{super()}}
+{% endblock %}
+</div> <!-- /container -->
+{% endblock %}
+{% block scripts %}
+{{super()}}
+<script type="text/javascript">
+  var table = $('#upcoming').DataTable({"aaSorting": []});
+</script>
+{% endblock %}

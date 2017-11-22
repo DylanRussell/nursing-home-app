@@ -1,0 +1,111 @@
+{% extends "base_authenticated.html" %}
+{% block content %}
+  <div class="container">
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="alert alert-{{category}} page-alert">
+          <button data-dismiss="alert" type="button" class="close"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+          <strong> {{message}} </strong>
+      </div>
+    {% endfor %}
+      <div class="col-md-4">
+        <select id="floornum" class="form-control">
+          <option value="">View Patients by Floor</option>
+          <option value="">All Floors</option>
+          {% for n in range(1, numFloors + 1) %}
+            <option value="^{{n}}">{{n}}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <select id="clinicians" class="form-control">
+          <option value="">View Patients by Clinician</option>
+          <option value="">All Clinicians</option>
+          {% for clinician in clinicians %}
+            <option value="{{clinician}}">{{clinician}}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-12">
+        <br><hr>
+        <table id="upcoming" class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Room</th>
+              <th>Nurse</th>
+              <th>Doctor</th>
+              <th>Last Visit</th>
+              <th>Overdue Date</th>
+              <th># of Days</th>
+              <th>Visited?</th>
+              <th>Visited By?</th>
+              <th>Visited On?</th>
+            </tr>
+          </thead>
+            {% for pId, pName, pStatus, rm, np, md, lvDesc, nv, days in patients %}
+              <tr class="{{'danger' if days <= 0}}">
+                <td>{{pName}}</td>
+                <td>{{rm}}</td>
+                <td>{{np}}</td>
+                <td>{{md}}</td>
+                <td>{{lvDesc}}</td>
+                <td>{{nv}}</td>
+                <td>{{days}}</td>
+                <td>
+                  <input type="hidden" name="{{pId}}_status" value="{{pStatus}}">
+                  <input type="checkbox" name="{{pId}}_visited" id="{{pId}}_visited" class="form-control">
+                </td>
+                <td>
+                  <input type="checkbox" name="{{pId}}_visited_by_md" id="{{pId}}_visited_by_md" class="form-control radio">
+                </td>
+                <td>
+                  <input type="text" name="{{pId}}_visited_on" id="{{pId}}_visited_on" class="form-control datepicker" value="{{today}}">
+                </td>
+              </tr>
+            {% endfor %}
+          <tbody>
+          </tbody>
+        </table>
+        <button id="submitform" class="btn btn-success">Add Visits</button>
+        <br><br>
+      </div>
+{% block footer %}
+{{super()}}
+{% endblock %}
+</div> <!-- /container -->
+{% endblock %}
+{% block scripts %}
+{{super()}}
+<script type="text/javascript">
+  $(".radio").bootstrapSwitch({
+    'onText': 'MD',
+    'offText': 'NP'
+  });
+  $('.datepicker').datepicker({
+    'endDate': '0d'
+  })
+  var table = $('#upcoming').DataTable({"aaSorting": []});
+  $('#submitform').click(function() {
+    var data = table.$('input').serialize();
+    $.ajax({url: $SCRIPT_ROOT + "/submit/upcoming",
+            data: data,
+            method: 'POST',
+            success: function(result){
+              if (Object.keys(result).length != 0) {
+                for (var key in result){
+                  $("#" + key).parent().append("<p class='help-block' style='color:#a94442'>" + result[key] + "</p>");
+                }
+              } else {
+                location.reload();
+              }
+            }
+          });
+  })
+  $("#floornum").change((function() {
+    table.column(1).search($("#floornum option:selected").val(), true, false).draw();
+  }));
+  $("#clinicians").change((function() {
+    table.search($("#clinicians option:selected").val()).draw();
+  }));
+</script>
+{% endblock %}

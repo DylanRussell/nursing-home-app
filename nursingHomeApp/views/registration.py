@@ -39,8 +39,7 @@ def login():
                 return redirect(next)
 
             return redirect(url_for('add_user'))
-        else:
-            flash('The account associated with this email has been deactivated.', 'danger')
+        flash('The account associated with this email has been deactivated.', 'danger')
     return render_template('login.html', form=form)
 
 
@@ -122,11 +121,9 @@ def create_user(form):
 def create_notification(form, userId):
     if form.role.data in {'Nurse Practicioner', 'Medical Doctor'}:
         cursor = mysql.connection.cursor()
-        args = (form.email.data, form.phone.data, userId, current_user.id,
-                current_user.id)
         cursor.execute("""INSERT INTO notification (email, phone, user_id,
-                            create_user, update_user) VALUES
-                            (%s, %s, %s, %s, %s)""", args)
+                        create_user) VALUES (%s, %s, %s, %s)""", 
+                        (form.email.data, form.phone.data, userId, current_user.id))
         mysql.connection.commit()
 
 
@@ -140,12 +137,11 @@ def is_safe_url(target):
 class User():
     def __init__(self, email=None, id=None):
         cursor = mysql.connection.cursor()
-        cursor.execute("""SELECT id, role, first, last, facility_id, email,
-                floor, email_confirmed, active FROM USER
-                WHERE (id=%s or email=%s)""", (id, email))
-        self.id, self.role, self.first, self.last, self.facility_id,\
-            self.email, self.floor, self.confirmed,\
-            self.active = cursor.fetchall()[0]
+        cursor.execute("""SELECT id, role, first, last, email, floor, active,
+                email_confirmed FROM USER WHERE (id=%s or email=%s)""",
+                    (id, email))
+        self.id, self.role, self.first, self.last, self.email, self.floor,\
+            self.active, self.confirmed = cursor.fetchall()[0]
 
     @property
     def is_authenticated(self):

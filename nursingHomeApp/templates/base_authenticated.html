@@ -3,6 +3,8 @@
 {{super()}}
 <link rel="stylesheet" type="text/css" href="/static/navbar.css"/>
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/css/bootstrap-datepicker.css">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/css/bootstrap2/bootstrap-switch.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs/dt-1.10.15/datatables.min.css"/>
 {% endblock %}
 {% block navbar %}
  <nav class="navbar navbar-default">
@@ -19,37 +21,34 @@
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
+        <!-- Clerk / Clerk Manager / Admin Users -->
         {% if current_user.role not in ['Medical Doctor', 'Nurse Practitioner'] %}
-        <li class="dropdown {% if request.endpoint in ['add_patient', 'view_patients', 'update_patient', 'load_patient'] %} active {% endif %}">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Patients <span class="caret"></span></a>
-          <ul class="dropdown-menu">
-            <li {% if request.endpoint == 'add_patient' %} class="active" {% endif %}><a href="{{url_for('add_patient')}}">Add Patient</a></li>
-            <li {% if request.endpoint == 'view_patients' %} class="active" {% endif %}><a href="{{url_for('view_patients', floor=current_user.floor)}}">View Patients</a></li>
-            <li {% if request.endpoint == 'load_patient' %} class="active" {% endif %}><a href="{{url_for('load_patient')}}">Bulk Load Patients</a></li>
-          </ul>
-        </li>
-        {% else %}
-        <li {% if request.endpoint == 'view_patients' %} class="active" {% endif %}><a href="{{url_for('view_patients', floor=current_user.floor)}}">View Your Patients</a></li>
-        {% endif %}
-        {% if current_user.role in ['Admin', 'Clerk'] %}
+          <!-- Patient Endpoints -->
+          <li class="dropdown {% if request.endpoint in ['add_patient', 'view_patients', 'update_patient', 'load_patient'] %} active {% endif %}">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Patients <span class="caret"></span></a>
+            <ul class="dropdown-menu">
+              <li class="{{'active' if request.endpoint == 'add_patient' }}"><a href="{{url_for('add_patient')}}">Add Patient</a></li>
+              <li class="{{'active' if request.endpoint == 'view_patients' }}"><a href="{{url_for('view_patients')}}">View Patients</a></li>
+              <li class="{{'active' if request.endpoint == 'load_patient' }}"><a href="{{url_for('load_patient')}}">Bulk Load Patients</a></li>
+            </ul>
+          </li>
+          <!-- User Mgmt Endpoints -->
           <li class="dropdown {% if request.endpoint in ['add_user', 'view_users'] %} active {% endif %}">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">User Management <span class="caret"></span></a>
             <ul class="dropdown-menu">
-              <li {% if request.endpoint == 'add_user' %} class="active" {% endif %}><a href="{{url_for('add_user')}}">Add User</a></li>
-                <li {% if request.endpoint == 'view_users' %} class="active" {% endif %}>
-                <a href="{{url_for('view_users')}}">
-                  {% if current_user.role == 'Clerk' %}View Clinicians{% else %} View Users {% endif %}
+              <li class="{{'active' if request.endpoint == 'add_user' }}"><a href="{{url_for('add_user')}}">Add User</a></li>
+                <li class="{{'active' if request.endpoint == 'view_users' }}"><a href="{{url_for('view_users')}}">
+                  {{'View Clinicians' if current_user.role == 'Clerk' else 'View Users'}}
                 </a></li>
             </ul>
           </li>
+          <!-- Upcoming Visits Endpoint -->
+          <li class="{{'active' if request.endpoint == 'upcoming_for_clerk' }}"><a href="{{url_for('upcoming_for_clerk')}}">Upcoming Visits</a></li>
+        <!-- NP / MD Users -->
+        {% else %}
+          <li class="{{'active' if request.endpoint == 'view_patients' }}"><a href="{{url_for('view_patients')}}">View Your Patients</a></li>
+          <li class="{{'active' if request.endpoint == 'upcoming_for_clinician' }}"><a href="{{url_for('upcoming_for_clinician')}}">Upcoming Visits</a></li>
         {% endif %}
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Visits <span class="caret"></span></a>
-          <ul class="dropdown-menu">
-            <li><a href="#">Add Visits</a></li>
-            <li><a href="#">View Visit History</a></li>
-          </ul>
-        </li>
         <li><a href="#">About</a></li>
         <li><a href="#">Contact</a></li>
       </ul>
@@ -105,6 +104,7 @@
 {{super()}}
 <script type="text/javascript" src="https://cdn.datatables.net/v/bs/dt-1.10.15/datatables.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/js/bootstrap-datepicker.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/js/bootstrap-switch.js"></script>
 <script type="text/javascript">
   $.fn.datepicker.defaults.format = "yyyy-mm-dd";
 </script>
