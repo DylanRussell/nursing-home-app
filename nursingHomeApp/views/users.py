@@ -15,9 +15,9 @@ def view_users():
 def get_users():
     q = "SELECT first, last, email, phone, role, active, id FROM user"
     if current_user.role == 'Clerk':
-        q += " WHERE role IN ('Nurse Practicioner', 'Medical Doctor') AND active=1"
+        q += " WHERE role IN ('Nurse Practitioner', 'Medical Doctor') AND active=1"
     elif current_user.role == 'Clerk Manager':
-        q += " WHERE ROLE IN ('Nurse Practicioner', 'Medical Doctor', 'Clerk', 'Clerk Manager')"
+        q += " WHERE ROLE IN ('Nurse Practitioner', 'Medical Doctor', 'Clerk', 'Clerk Manager')"
     cursor = mysql.connection.cursor()
     cursor.execute(q)
     return cursor.fetchall()
@@ -82,7 +82,6 @@ def toggle_active_state(userId):
 
 
 def get_user_role(id):
-    print id
     cursor = mysql.connection.cursor()
     cursor.execute("SELECT role FROM user WHERE id=%s", (id,))
     return cursor.fetchone()[0]

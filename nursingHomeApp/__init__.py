@@ -7,7 +7,8 @@ from flask_bootstrap import Bootstrap
 from flask_mail import Mail
 
 
-app = Flask(__name__)
+application = Flask(__name__)
+app = application
 app.config.from_object('nursingHomeApp.config_safe')
 Bootstrap(app)
 lm = LoginManager(app)

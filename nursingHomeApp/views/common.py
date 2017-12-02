@@ -15,7 +15,7 @@ def login_required(fn):
             role = current_user.role
             cursor = mysql.connection.cursor()
             if not cursor.execute("""SELECT * FROM user_role WHERE
-                    (select role_value WHERE role=%s) &
+                    (select role_value FROM user_role WHERE role=%s) &
                     (select bit from permission where name=%s)""", (role, fn)):
                 flash('You are not authorized to view this page.', 'danger')
                 return redirect(url_for('login'))

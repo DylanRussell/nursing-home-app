@@ -10,6 +10,20 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature
 from flask_mail import Message
 
 
+@app.route("/opt/out/<int:userId>")
+def opt_out_page(userId):
+    opt_out_user(userId)
+    flash('You have been opted out of all notifications.', 'success')
+    return redirect(url_for('login'))
+
+
+def opt_out_user(userId):
+    cursor = mysql.connection.cursor()
+    cursor.execute("""UPDATE notification SET email_notification_on=0, notify_designee=0,
+                    phone_notification_on=0 WHERE user_id=%s""", (userId,))
+    mysql.connection.commit()
+
+
 @app.route("/logout")
 def logout():
     logout_user()
@@ -37,8 +51,10 @@ def login():
             next = request.args.get('next')
             if next and is_safe_url(next):  # need to test an invalid url...
                 return redirect(next)
-
-            return redirect(url_for('add_user'))
+            if current_user.role in {'Nurse Practitioner', 'Medical Doctor'}:
+                return redirect(url_for('upcoming_for_clinician'))
+            else:
+                return redirect(url_for('upcoming_for_clerk'))
         flash('The account associated with this email has been deactivated.', 'danger')
     return render_template('login.html', form=form)
 
@@ -54,7 +70,9 @@ def add_user():
         msg = Message("Sign Up For visitMinder", recipients=[form.email.data])
         token = generate_confirmation_token(form.email.data)
         invitation_url = url_for('confirm_email', token=token, _external=True)
-        msg.html = render_template('invitation.html', url=invitation_url)
+        opt_out_url = url_for('opt_out_page', userId=userId, _external=True)
+        msg.html = render_template('invitation.html', url=invitation_url, first=form.first.data,
+                                   last=form.last.data, role=form.role.data, opt_out_url=opt_out_url)
         mail.send(msg)
         flash('User successfully added!', 'success')
         return redirect(url_for('add_user'))
@@ -73,11 +91,12 @@ def confirm_email(token):
         user = User(email=email)
         if user.active:
             login_user(user)
-            flash('Sign up complete! View your patients here.', 'success')
-            return redirect(url_for('add_user'))
-        else:
-            flash('The account associated with this email has been deactivated.', 'danger')
-            return redirect(url_for('login'))
+            flash('Sign up complete!', 'success')
+            if current_user.role in {'Nurse Practitioner', 'Medical Doctor'}:
+                return redirect(url_for('upcoming_for_clinician'))
+            return redirect(url_for('upcoming_for_clerk'))
+        flash('The account associated with this email has been deactivated.', 'danger')
+        return redirect(url_for('login'))
     return render_template('add_password.html', form=form)
 
 
@@ -109,20 +128,19 @@ def authenticate_user(email, password):
 def create_user(form):
     cursor = mysql.connection.cursor()
     args = (form.role.data, form.first.data.title(), form.last.data.title(),
-            current_user.facility_id, form.email.data, form.phone.data,
-            form.floor.data, current_user.id, current_user.id)
-    cursor.execute("""INSERT INTO user (role, first, last, facility_id, email,
-                        phone, floor, create_user, update_user) VALUES
-                        (%s, %s, %s, %s, %s, %s, %s, %s, %s)""", args)
+            form.email.data, form.phone.data, form.floor.data, current_user.id)
+    cursor.execute("""INSERT INTO user (role, first, last, email,
+                        phone, floor, create_user) VALUES
+                        (%s, %s, %s, %s, %s, %s, %s)""", args)
     mysql.connection.commit()
     return cursor.lastrowid
 
 
 def create_notification(form, userId):
-    if form.role.data in {'Nurse Practicioner', 'Medical Doctor'}:
+    if form.role.data in {'Nurse Practitioner', 'Medical Doctor'}:
         cursor = mysql.connection.cursor()
         cursor.execute("""INSERT INTO notification (email, phone, user_id,
-                        create_user) VALUES (%s, %s, %s, %s)""", 
+                        create_user) VALUES (%s, %s, %s, %s)""",
                         (form.email.data, form.phone.data, userId, current_user.id))
         mysql.connection.commit()
 

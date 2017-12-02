@@ -1,4 +1,9 @@
-<p>Welcome! Thanks for signing up. Please follow this link to activate your account:</p>
+<p>Hello {{first}} {{last}},</p><br>
+<p>Welcome! You have been signed up for visitMinder. Please follow this link to activate your account:</p>
 <p><a href="{{ url }}">{{ url }}</a></p>
 <br>
-<p>Cheers!</p>
+{% if role in ['Medical Doctor', 'Nurse Practitioner'] %}
+    <p>You will now receive text or e-mail notifications when your patients are due for a visit. You may login to adjust your notification preferences. Follow this link if you would like notifications turned off:</p>
+    <p><a href="{{ opt_out_url }}">{{ opt_out_url }}</a></p>
+{% endif %}
+<p>Questions? email us at visitMinder@gmail.com</p>

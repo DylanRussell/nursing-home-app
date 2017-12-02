@@ -26,13 +26,13 @@ def upcoming_for_clerk():
 
 def get_num_floors():
     cursor = mysql.connection.cursor()
-    cursor.execute("SELECT num_floors FROM facility WHERE id=%s", (current_user.facility_id,))
+    cursor.execute("SELECT num_floors FROM facility WHERE id=1")
     return cursor.fetchall()[0][0]
 
 
 def get_clinicians():
     cursor = mysql.connection.cursor()
-    cursor.execute("SELECT CONCAT_WS(' ', first, last) FROM user WHERE role IN ('Medical Doctor', 'Nurse Practicioner') ORDER BY first, last")
+    cursor.execute("SELECT CONCAT_WS(' ', first, last) FROM user WHERE role IN ('Medical Doctor', 'Nurse Practitioner') ORDER BY first, last")
     return [x[0] for x in cursor.fetchall()]
 
 

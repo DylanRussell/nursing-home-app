@@ -71,12 +71,11 @@
                               <div class="col-lg-8">
                                   <p class="text-left"><strong>{{current_user.first + ' ' + current_user.last}}</strong></p>
                                   <p class="text-left small">{{current_user.email}}</p>
-                                  <p class="text-left">
-                                      <a href="#" class="btn btn-primary btn-block btn-sm">My Account</a>
-                                  </p>
-                                  <p class="text-left">
-                                      <a href="{{url_for('notifications')}}" class="btn btn-primary btn-block btn-sm">My Notifications</a>
-                                  </p>
+                                  {% if current_user.role in ['Medical Doctor', 'Nurse Practitioner'] %}
+                                    <p class="text-left">
+                                        <a href="{{url_for('notifications')}}" class="btn btn-primary btn-block btn-sm">My Notifications</a>
+                                    </p>
+                                  {% endif %}
                               </div>
                           </div>
                       </div>
