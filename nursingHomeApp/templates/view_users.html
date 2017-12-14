@@ -29,10 +29,16 @@
                   <td>{{user[2]}}</td>
                   <td>{{user[3]}}</td>
                   <td>{{user[4]}}</td>
-                  {% if (current_user.role == 'Clerk Manager' and user[4] == 'Clerk') or current_user.role == 'Admin' %}
-                    <td><a href="{{url_for('toggle_user', id=user[6])}}" class="btn btn-{% if user[5] %}danger{% else %}success{% endif %}">
-                      {% if user[5] %}Remove{% else %}Add{% endif %}
-                    </a></td>
+                  {% if current_user.role in ['Admin', 'Clerk Manager'] %}
+                    <td>
+                      {% if (current_user.role == 'Clerk Manager' and user[4] == 'Clerk') or current_user.role == 'Admin' %}
+                        <a href="{{url_for('toggle_user', id=user[6])}}" class="btn btn-{% if user[5] %}danger{% else %}success{% endif %}">
+                        {% if user[5] %}Remove{% else %}Add{% endif %}
+                        </a>
+                      {% else %}
+                        <p>N/A</p>
+                      {% endif %}
+                    </td>
                   {% endif %}
               </tr>
             {% endfor %}

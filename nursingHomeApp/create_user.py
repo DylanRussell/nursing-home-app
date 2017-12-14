@@ -28,12 +28,10 @@ def main():
         role = raw_input()
         print 'Enter floor: ',
         floor = raw_input()
-        cursor.execute("""INSERT INTO user (role, first, last, facility_id,
-                email, floor, password, email_confirmed, confirmed_on,
-                create_user, update_user) VALUES
-                (%s, %s, %s, 1, %s, %s, %s, 1, NOW(), 2, 2)""",
-                       (role, first, last, email, floor,
-                        bcrypt.generate_password_hash(password)))
+        cursor.execute("""INSERT INTO user (role, first, last,
+                email, floor, password, email_confirmed, confirmed_on) VALUES
+                (%s, %s, %s, %s, %s, %s, 1, NOW())""", (role, first, last,
+                    email, floor, bcrypt.generate_password_hash(password)))
         mysql.connection.commit()
         print 'User added.'
 

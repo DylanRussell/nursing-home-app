@@ -120,7 +120,7 @@ def get_patients():
     JOIN patient_status s ON s.id=p.status WHERE 1=1"""
     if current_user.role == 'Nurse Practitioner':
         q += ' AND n.id=%s' % current_user.id
-    elif current_user.role == 'Medical Doctor':
+    elif current_user.role == 'Physician':
         q += ' AND m.id=%s' % current_user.id
     cursor = mysql.connection.cursor()
     cursor.execute(q)

@@ -32,10 +32,10 @@
             <tr>
               <th>Name</th>
               <th>Room</th>
-              <th>Nurse</th>
-              <th>Doctor</th>
+              <th>Nurse Practitioner</th>
+              <th>Physician</th>
               <th>Last Visit</th>
-              <th>Overdue Date</th>
+              <th>Due Date</th>
               <th># of Days</th>
               <th>Visited?</th>
               <th>Visited By?</th>
@@ -43,13 +43,13 @@
             </tr>
           </thead>
             {% for pId, pName, pStatus, rm, np, md, lvDesc, nv, days in patients %}
-              <tr class="{{'danger' if days <= 0}}">
+              <tr>
                 <td>{{pName}}</td>
                 <td>{{rm}}</td>
                 <td>{{np}}</td>
                 <td>{{md}}</td>
                 <td>{{lvDesc}}</td>
-                <td>{{nv}}</td>
+                <td class="{{'danger' if days <= 0}}">{{nv}}</td>
                 <td>{{days}}</td>
                 <td>
                   <input type="hidden" name="{{pId}}_status" value="{{pStatus}}">
@@ -77,6 +77,7 @@
 {% block scripts %}
 {{super()}}
 <script type="text/javascript">
+  $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
   $(".radio").bootstrapSwitch({
     'onText': 'MD',
     'offText': 'NP'

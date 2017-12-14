@@ -15,9 +15,9 @@ def view_users():
 def get_users():
     q = "SELECT first, last, email, phone, role, active, id FROM user"
     if current_user.role == 'Clerk':
-        q += " WHERE role IN ('Nurse Practitioner', 'Medical Doctor') AND active=1"
+        q += " WHERE role IN ('Nurse Practitioner', 'Physician') AND active=1"
     elif current_user.role == 'Clerk Manager':
-        q += " WHERE ROLE IN ('Nurse Practitioner', 'Medical Doctor', 'Clerk', 'Clerk Manager')"
+        q += " WHERE ROLE IN ('Nurse Practitioner', 'Physician', 'Clerk', 'Clerk Manager')"
     cursor = mysql.connection.cursor()
     cursor.execute(q)
     return cursor.fetchall()

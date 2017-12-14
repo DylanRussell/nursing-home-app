@@ -36,12 +36,6 @@ def is_same_pw(form, field):
         raise ValidationError('Does not match above password.')
 
 
-def is_floor_no_required(form, field):
-    if form.role.data == 'Clerk':
-        if not form.floor.data:
-            raise ValidationError('This Field is Required for Clerks')
-
-
 def is_email_unique(form, field):
     cursor = mysql.connection.cursor()
     if cursor.execute("SELECT * FROM user WHERE email=%s", (form.email.data,)):
@@ -59,7 +53,6 @@ class AddUserForm(FlaskForm):
     last = TextField('Last Name', validators=[DataRequired()])
     email = EmailField('Email', validators=[DataRequired(), is_email_unique])
     phone = TelField('Phone number', validators=[is_valid_phone])
-    floor = IntegerField('Floor Number', validators=[is_floor_no_required, Optional()])
     role = SelectField('Role', validators=[DataRequired()])
     submit = SubmitField('Add')
 

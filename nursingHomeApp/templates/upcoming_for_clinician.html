@@ -15,16 +15,16 @@
               <th>Name</th>
               <th>Room</th>
               <th>Last Visit</th>
-              <th>Overdue Date</th>
+              <th>Due Date</th>
               <th># of Days</th>
             </tr>
           </thead>
             {% for pName, rm, lvDesc, nvDesc, days in patients %}
-              <tr class="{{'danger' if days <= 0}}">
+              <tr>
                 <td>{{pName}}</td>
                 <td>{{rm}}</td>
                 <td>{{lvDesc}}</td>
-                <td>{{nvDesc}}</td>
+                <td class="{{'danger' if days <= 0}}">{{nvDesc}}</td>
                 <td>{{days}}</td>
               </tr>
             {% endfor %}

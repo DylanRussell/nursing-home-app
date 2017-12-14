@@ -32,7 +32,7 @@ def get_num_floors():
 
 def get_clinicians():
     cursor = mysql.connection.cursor()
-    cursor.execute("SELECT CONCAT_WS(' ', first, last) FROM user WHERE role IN ('Medical Doctor', 'Nurse Practitioner') ORDER BY first, last")
+    cursor.execute("SELECT CONCAT_WS(' ', first, last) FROM user WHERE role IN ('Physician', 'Nurse Practitioner') ORDER BY first, last")
     return [x[0] for x in cursor.fetchall()]
 
 
@@ -69,9 +69,9 @@ def format_patient_info(patients, forClinician=False):
         if not lv:
             lvDesc = 'None'
         elif lvBy:
-            lvDesc = lv.strftime('%A, %b %d Doctor')
+            lvDesc = lv.strftime('%b %d, Physician')
         else:
-            lvDesc = lv.strftime('%A, %b %d Nurse')
+            lvDesc = lv.strftime('%b %d, Nurse')
         nv, nvBy = get_next_visit_date(pStatus, lv, lvBy, pv, pvBy, admit)
         nvDesc = nv.strftime('%A, %b %d ') + nvBy
         days = (nv - datetime.datetime.today().date()).days
@@ -87,11 +87,11 @@ def get_next_visit_date(pStatus, lv, lvBy, pv, pvBy, admit):
     who must administer the vist)"""
     if pStatus == 1:  # long term care
         nv = lv + datetime.timedelta(days=60)
-        nvBy = 'Nurse/Doctor' if lvBy else 'Doctor'
+        nvBy = 'Nurse/Physician' if lvBy else 'Physician'
     else:
         lv = lv or admit
         nv = lv + datetime.timedelta(days=30)
-        nvBy = 'Nurse/Doctor' if (lvBy or pvBy) else 'Doctor'
+        nvBy = 'Nurse/Physician' if (lvBy or pvBy) else 'Physician'
     return nv, nvBy
 
 

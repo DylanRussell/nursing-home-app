@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block head %}
 {{super()}}
-<link rel="stylesheet" type="text/css" href="/static/navbar.css"/>
+<link rel="stylesheet" type="text/css" href="{{url_for('static', filename='navbar.css')}}"/>
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/css/bootstrap-datepicker.css">
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-switch/3.3.4/css/bootstrap2/bootstrap-switch.css">
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs/dt-1.10.15/datatables.min.css"/>
@@ -17,12 +17,12 @@
         <span class="icon-bar"></span>
       </button>
       <span class="navbar-brand">visitMinder</span>
-      <span class="navbar-brand-img"><img src="http://placehold.it/150x50&text=Logo" alt=""></span>
+<!--       <span class="navbar-brand-img"><img src="http://placehold.it/150x50&text=Logo" alt=""></span> -->
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <!-- Clerk / Clerk Manager / Admin Users -->
-        {% if current_user.role not in ['Medical Doctor', 'Nurse Practitioner'] %}
+        {% if current_user.role not in ['Physician', 'Nurse Practitioner'] %}
           <!-- Patient Endpoints -->
           <li class="dropdown {% if request.endpoint in ['add_patient', 'view_patients', 'update_patient', 'load_patient'] %} active {% endif %}">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Patients <span class="caret"></span></a>
@@ -49,8 +49,6 @@
           <li class="{{'active' if request.endpoint == 'view_patients' }}"><a href="{{url_for('view_patients')}}">View Your Patients</a></li>
           <li class="{{'active' if request.endpoint == 'upcoming_for_clinician' }}"><a href="{{url_for('upcoming_for_clinician')}}">Upcoming Visits</a></li>
         {% endif %}
-        <li><a href="#">About</a></li>
-        <li><a href="#">Contact</a></li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
           <li class="dropdown">
@@ -71,7 +69,7 @@
                               <div class="col-lg-8">
                                   <p class="text-left"><strong>{{current_user.first + ' ' + current_user.last}}</strong></p>
                                   <p class="text-left small">{{current_user.email}}</p>
-                                  {% if current_user.role in ['Medical Doctor', 'Nurse Practitioner'] %}
+                                  {% if current_user.role in ['Physician', 'Nurse Practitioner'] %}
                                     <p class="text-left">
                                         <a href="{{url_for('notifications')}}" class="btn btn-primary btn-block btn-sm">My Notifications</a>
                                     </p>

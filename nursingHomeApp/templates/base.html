@@ -2,14 +2,14 @@
 {% block title %}visitMinder{% endblock %}
 {% block head %}
 {{super()}}
-<link rel="stylesheet" type="text/css" href="/static/footer.css"/>
+<link rel="stylesheet" type="text/css" href="{{url_for('static', filename='footer.css')}}"/>
 {% endblock %}
 
 {% block content %}
 {{super()}}
 {% block footer %}
-<footer class="footer col-sm-12">
+<!-- <footer class="footer col-sm-12">
     <p>&copy; 2016 Awesome, Inc.</p>
-</footer>
+</footer> -->
 {% endblock footer %}
 {% endblock content %}

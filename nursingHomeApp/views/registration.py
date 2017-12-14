@@ -51,7 +51,7 @@ def login():
             next = request.args.get('next')
             if next and is_safe_url(next):  # need to test an invalid url...
                 return redirect(next)
-            if current_user.role in {'Nurse Practitioner', 'Medical Doctor'}:
+            if current_user.role in {'Nurse Practitioner', 'Physician'}:
                 return redirect(url_for('upcoming_for_clinician'))
             else:
                 return redirect(url_for('upcoming_for_clerk'))
@@ -86,18 +86,22 @@ def confirm_email(token):
         flash('The confirmation link is invalid or has expired.', 'danger')
         return redirect(url_for('login'))
     form = PasswordForm()
+    user = User(email=email)
+    if user.role == 'Physician':
+        name = 'Doctor ' + user.last
+    else:
+        name = user.first + ' ' + user.name
     if form.validate_on_submit():
         authenticate_user(email, form.pw1.data)
-        user = User(email=email)
         if user.active:
             login_user(user)
             flash('Sign up complete!', 'success')
-            if current_user.role in {'Nurse Practitioner', 'Medical Doctor'}:
+            if current_user.role in {'Nurse Practitioner', 'Physician'}:
                 return redirect(url_for('upcoming_for_clinician'))
             return redirect(url_for('upcoming_for_clerk'))
         flash('The account associated with this email has been deactivated.', 'danger')
         return redirect(url_for('login'))
-    return render_template('add_password.html', form=form)
+    return render_template('add_password.html', form=form, name=name)
 
 
 def generate_confirmation_token(email):
@@ -128,16 +132,16 @@ def authenticate_user(email, password):
 def create_user(form):
     cursor = mysql.connection.cursor()
     args = (form.role.data, form.first.data.title(), form.last.data.title(),
-            form.email.data, form.phone.data, form.floor.data, current_user.id)
+            form.email.data, form.phone.data, current_user.id)
     cursor.execute("""INSERT INTO user (role, first, last, email,
-                        phone, floor, create_user) VALUES
-                        (%s, %s, %s, %s, %s, %s, %s)""", args)
+                        phone, create_user) VALUES
+                        (%s, %s, %s, %s, %s, %s)""", args)
     mysql.connection.commit()
     return cursor.lastrowid
 
 
 def create_notification(form, userId):
-    if form.role.data in {'Nurse Practitioner', 'Medical Doctor'}:
+    if form.role.data in {'Nurse Practitioner', 'Physician'}:
         cursor = mysql.connection.cursor()
         cursor.execute("""INSERT INTO notification (email, phone, user_id,
                         create_user) VALUES (%s, %s, %s, %s)""",

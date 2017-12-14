@@ -24,9 +24,9 @@
                 <th>Last</th>
                 <th>Room #</th>
                 <th>Status</th>
-                <th>Doctor</th>
-                <th>Nurse</th>
-                {% if current_user.role not in ['Medical Doctor', 'Nurse Practitioner'] %}
+                <th>Physician</th>
+                <th>Nurse Practitioner</th>
+                {% if current_user.role not in ['Physician', 'Nurse Practitioner'] %}
                   <th>Update Patient</th>
                 {% endif %}
             </tr>
@@ -40,7 +40,7 @@
                   <td>{{patient[3]}}</td>
                   <td>{{patient[4]}}</td>
                   <td>{{patient[5]}}</td>
-                  {% if current_user.role not in ['Medical Doctor', 'Nurse Practitioner'] %}
+                  {% if current_user.role not in ['Physician', 'Nurse Practitioner'] %}
                     <td><a href="{{url_for('update_patient', id=patient[6])}}">Update Patient</a></td>
                   {% endif %}
               </tr>

@@ -21,7 +21,7 @@ def validate_status_allowed(form, field):
                 raise ValidationError('If patient is in Long Term Care or Skilled Care, the dates of the last 2 visits are requried.')
         if status == 'long term care' and not lvBy and not pvBy:
             form.upload.data.seek(0)
-            raise ValidationError('For a patient to go into Long Term Care, one of the last 2 visits must have been done by a doctor.')
+            raise ValidationError('For a patient to go into Long Term Care, one of the last 2 visits must have been done by a Physician.')
     form.upload.data.seek(0)
 
 
@@ -112,25 +112,25 @@ def validate_nps(form, field):
 
 def get_add_status_choices():
     cursor = mysql.connection.cursor()
-    cursor.execute("SELECT id, status FROM patient_status WHERE id != 3")
+    cursor.execute("SELECT id, status FROM patient_status WHERE id != 3 ORDER by id DESC")
     return cursor.fetchall()
 
 
 def get_update_status_choices():
     cursor = mysql.connection.cursor()
-    cursor.execute("SELECT id, status FROM patient_status WHERE id != 4")
+    cursor.execute("SELECT id, status FROM patient_status")
     return cursor.fetchall()
 
 
 def get_all_mds():
     cursor = mysql.connection.cursor()
-    cursor.execute("SELECT id, CONCAT_WS(' ', first, last) FROM user WHERE role='Medical Doctor' ORDER BY first, last")
+    cursor.execute("SELECT id, CONCAT_WS(' ', first, last) FROM user WHERE role='Physician' ORDER BY first, last")
     return cursor.fetchall()
 
 
 def get_all_nps():
     cursor = mysql.connection.cursor()
-    cursor.execute("SELECT convert(id, char), CONCAT_WS(' ', first, last) FROM user WHERE role='Nurse Practicioner' ORDER BY first, last")
+    cursor.execute("SELECT convert(id, char), CONCAT_WS(' ', first, last) FROM user WHERE role='Nurse Practitioner' ORDER BY first, last")
     return (('', ''),) + cursor.fetchall()
 
 
@@ -147,7 +147,7 @@ def check_if_required(form, field):
         if not form.lastVisit.data or not form.priorVisit.data:
             raise ValidationError('If patient is in Long Term Care or Skilled Care, the dates of the last 2 visits are requried.')
     if form.status.data == 1 and not form.lastVisitBy.data and not form.priorVisitBy.data:
-        raise ValidationError('For a patient to go into Long Term Care, one of the last 2 visits must have been done by a doctor.')
+        raise ValidationError('For a patient to go into Long Term Care, one of the last 2 visits must have been done by a Physician.')
 
 
 def admittance_date_validations(form, field):
@@ -166,7 +166,7 @@ def can_status_change(form, field):
         if numVisits < 2:
             raise ValidationError('For a patient to go into long term or skilled care, they must have been visited at least 2 times.')
         if form.status.data == 1 and not any(x[0] for x in cursor.fetchall()):
-            raise ValidationError('For a patient to go into long term care, they must have already been visited by a doctor at least 1 time.')
+            raise ValidationError('For a patient to go into long term care, they must have already been visited by a Physician at least 1 time.')
 
 
 class AddPatientForm(FlaskForm):
@@ -174,12 +174,12 @@ class AddPatientForm(FlaskForm):
     last = StringField('Last Name', validators=[DataRequired()])
     room = StringField('Room No', validators=[DataRequired()])
     status = SelectField('Patient Status', validators=[DataRequired(), check_if_required], choices=get_add_status_choices, coerce=int)
-    md = SelectField("Patient's MD", validators=[DataRequired()], choices=get_all_mds, coerce=int)
-    np = SelectField("Patient's NP", validators=[Optional()], choices=get_all_nps, filters=[lambda x: x or None])
+    md = SelectField("Patient's Physician", validators=[DataRequired()], choices=get_all_mds, coerce=int)
+    np = SelectField("Patient's Nurse Practitioner", validators=[Optional()], choices=get_all_nps, filters=[lambda x: x or None])
     lastVisit = DateField('Last Visited Date', validators=[Optional(), DateRange(max=datetime.now().date), gt_prior_visit])
-    lastVisitBy = BooleanField('Last Vist Done by a Doctor?')
+    lastVisitBy = BooleanField('Last Vist Done by a Physician?')
     priorVisit = DateField('Second to Last Visited Date', validators=[Optional(), DateRange(max=datetime.now().date)])
-    priorVisitBy = BooleanField('Second to Last Vist Done by a Doctor?')
+    priorVisitBy = BooleanField('Second to Last Vist Done by a Physician?')
     admittance = DateField('Admittance Date', validators=[Optional(), DateRange(max=datetime.now().date), admittance_date_validations])
     submit = SubmitField('Add')
 
@@ -190,8 +190,8 @@ class UpdatePatientForm(FlaskForm):
     last = StringField('Last Name', validators=[DataRequired()])
     room = StringField('Room No', validators=[DataRequired()])
     status = SelectField('Patient Status', validators=[DataRequired(), can_status_change], choices=get_update_status_choices, coerce=int)
-    md = SelectField("Patient's MD", validators=[DataRequired()], choices=get_all_mds, coerce=int)
-    np = SelectField("Patient's NP", validators=[Optional()], choices=get_all_nps, filters=[lambda x: x or None])
+    md = SelectField("Patient's Physician", validators=[DataRequired()], choices=get_all_mds, coerce=int)
+    np = SelectField("Patient's Nurse Practitioner", validators=[Optional()], choices=get_all_nps, filters=[lambda x: x or None])
     submit = SubmitField('Update')
 
 
