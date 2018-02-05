@@ -1,18 +1,26 @@
 from __future__ import absolute_import
 from nursingHomeApp import app, mysql
-from flask import render_template, flash, redirect, url_for, request, make_response
+from flask import render_template, flash, redirect, url_for, request,\
+    make_response
 from nursingHomeApp.views.common import login_required
 from flask_login import current_user
-from nursingHomeApp.forms.patient_forms import AddPatientForm, UpdatePatientForm, LoadPatientsForm
+from nursingHomeApp.forms.patient_forms import AddPatientForm,\
+    UpdatePatientForm, LoadPatientsForm
 import StringIO, csv
 
 
-patientInsert = """INSERT INTO patient (first, last, room_number, status,
-            md_id, np_id, admittance_date, create_user) VALUES
-            (%s, %s, %s, %s, %s, %s, %s, %s)"""
-
-visitInsert = """INSERT INTO VISIT (patient_id, visit_date,
-            visit_done_by_doctor, create_user) VALUES (%s, %s, %s, %s)"""
+PATIENT_INSERT = """INSERT INTO patient (first, last, room_number, status,
+md_id, np_id, admittance_date, create_user) VALUES
+(%s, %s, %s, %s, %s, %s, %s, %s)"""
+VISIT_INSERT = """INSERT INTO VISIT (patient_id, visit_date,
+visit_done_by_doctor, create_user) VALUES (%s, %s, %s, %s)"""
+SELECT_PATIENT = """SELECT p.first, p.last, p.room_number, p.status, p.md_id,
+p.np_id FROM patient p WHERE id=%s"""
+UPDATE_PATIENT = """UPDATE patient SET first=%s, last=%s, room_number=%s,
+status=%s, md_id=%s, np_id=%s, update_user=%s WHERE id=%s"""
+SELECT_USER_ID = "SELECT id FROM USER WHERE CONCAT_WS(' ', first, last)=%s"
+SELECT_PATIENT_STATUS = "SELECT id FROM patient_status WHERE status=%s"
+SELECT_FLOOR_CNT = "SELECT num_floors FROM facility WHERE id=1"
 
 
 @app.route('/load/patient/format')
@@ -45,8 +53,7 @@ def update_patient(id):
 
 def set_patient_defaults(form):
     cursor = mysql.connection.cursor()
-    cursor.execute("""SELECT p.first, p.last, p.room_number, p.status, p.md_id,
-        p.np_id FROM patient p WHERE id=%s""", (form.patientId.data,))
+    cursor.execute(SELECT_PATIENT, (form.patientId.data,))
     (form.first.default, form.last.default, form.room.default,
         form.status.default, form.md.default,
         form.np.default) = cursor.fetchone()
@@ -58,8 +65,7 @@ def update_patient_data(form):
             form.status.data, form.md.data,
             form.np.data, current_user.id, form.patientId.data)
     cursor = mysql.connection.cursor()
-    cursor.execute("""UPDATE patient SET first=%s, last=%s, room_number=%s,
-        status=%s, md_id=%s, np_id=%s, update_user=%s WHERE id=%s""", args)
+    cursor.execute(UPDATE_PATIENT, args)
     mysql.connection.commit()
 
 
@@ -93,21 +99,20 @@ def add_patient():
 def create_prior_visits(form, patientId):
     cursor = mysql.connection.cursor()
     if form.priorVisit.data:
-        cursor.execute(visitInsert, (patientId, form.priorVisit.data,
-                                     form.priorVisitBy.data, current_user.id))
+        args = (patientId, form.priorVisit.data, form.priorVisitBy.data, current_user.id)
+        cursor.execute(VISIT_INSERT, args)
     if form.lastVisit.data:
-        cursor.execute(visitInsert, (patientId, form.lastVisit.data,
-                                     form.lastVisitBy.data, current_user.id))
+        args = (patientId, form.lastVisit.data, form.lastVisitBy.data, current_user.id)
+        cursor.execute(VISIT_INSERT, args)
     if form.lastVisit.data or form.priorVisit.data:
         mysql.connection.commit()
 
 
 def create_patient(form):
     cursor = mysql.connection.cursor()
-    cursor.execute(patientInsert, (form.first.data, form.last.data,
-                                   form.room.data, form.status.data,
-                                   form.md.data, form.np.data,
-                                   form.admittance.data, current_user.id))
+    args = (form.first.data, form.last.data, form.room.data, form.status.data,
+            form.md.data, form.np.data, form.admittance.data, current_user.id)
+    cursor.execute(PATIENT_INSERT, args)
     mysql.connection.commit()
     return cursor.lastrowid
 
@@ -115,8 +120,8 @@ def create_patient(form):
 def get_patients():
     q = """SELECT p.first, p.last, p.room_number, s.status,
     CONCAT_WS(' ', m.first, m.last), CONCAT_WS(' ', n.first, n.last),
-    p.id FROM patient p LEFT JOIN
-    user m ON m.id=p.md_id LEFT JOIN user n ON n.id=p.np_id
+    p.id FROM patient p LEFT JOIN user m ON m.id=p.md_id
+    LEFT JOIN user n ON n.id=p.np_id
     JOIN patient_status s ON s.id=p.status WHERE 1=1"""
     if current_user.role == 'Nurse Practitioner':
         q += ' AND n.id=%s' % current_user.id
@@ -129,7 +134,7 @@ def get_patients():
 
 def get_num_floors():
     cursor = mysql.connection.cursor()
-    cursor.execute("SELECT num_floors FROM facility WHERE id=1")
+    cursor.execute(SELECT_FLOOR_CNT)
     return cursor.fetchall()[0][0]
 
 
@@ -149,13 +154,13 @@ def load_patient_data(form):
         first, last, md, np, state = [clean_text(x) for x in (first, last, md, np, state)]
         lv, pv, admittance = [x or None for x in (lv, pv, admittance)]
         state, md, np = get_status_int(state), get_user_id(md), get_user_id(np)
-        cursor.execute(patientInsert, (first, last, room, state, md, np,
-                                       admittance, current_user.id))
-        patientId = cursor.lastrowid
+        cursor.execute(PATIENT_INSERT, (first, last, room, state, md, np,
+                                        admittance, current_user.id))
+        pId = cursor.lastrowid
         if pv:
-            cursor.execute(visitInsert, (patientId, pv, pvBy, current_user.id))
+            cursor.execute(VISIT_INSERT, (pId, pv, pvBy, current_user.id))
         if lv:
-            cursor.execute(visitInsert, (patientId, lv, lvBy, current_user.id))
+            cursor.execute(VISIT_INSERT, (pId, lv, lvBy, current_user.id))
     mysql.connection.commit()
 
 
@@ -165,12 +170,12 @@ def clean_text(val):
 
 def get_status_int(status):
     cursor = mysql.connection.cursor()
-    cursor.execute("SELECT id FROM patient_status WHERE status=%s", (status,))
+    cursor.execute(SELECT_PATIENT_STATUS, (status,))
     return cursor.fetchall()[0][0]
 
 
 def get_user_id(un):
     if un:
         cursor = mysql.connection.cursor()
-        cursor.execute("SELECT id FROM USER WHERE CONCAT_WS(' ', first, last)=%s", (un,))
+        cursor.execute(SELECT_USER_ID, (un,))
         return cursor.fetchall()[0][0]

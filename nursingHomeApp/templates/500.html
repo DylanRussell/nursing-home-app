@@ -16,15 +16,12 @@
   </div>
 {% endblock %}
 {% block content %}
-  <div class="jumbotron">
-    {% for category, message in get_flashed_messages(with_categories=true) %}
-      <div class="alert alert-{{category}} page-alert">
-          <button data-dismiss="alert" type="button" class="close"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
-          <strong> {{message}} </strong>
-      </div>
-    {% endfor %}
-    {{ wtf.quick_form(form, form_type='horizontal', horizontal_columns=('md', 4, 4), button_map={'submit': 'success'}) }}
-  </div>
+  <div class="container">
+    <p>Sorry, we had an error on our end. If this is preventing you from doing something, send us an email @ visitMinder@gmail.com.
+
+        Otherwise you can ignore this and we will look into it shortly.
+
+    Thanks!</p>
 {% block footer %}
 {{super()}}
 {% endblock %}

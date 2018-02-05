@@ -6,6 +6,16 @@ from flask_login import current_user
 from nursingHomeApp.forms.notification_forms import NotificationForm
 
 
+SELECT_NOTIFICATION = """SELECT email, designee_email, email_notification_on,
+notify_designee, email_every_n_days, phone, phone_notification_on,
+sms_n_days_advance FROM notification WHERE user_id=%s"""
+UPDATE_NOTIFICATION = """UPDATE notification SET email=%s, designee_email=%s,
+email_notification_on=%s, notify_designee=%s, email_every_n_days=%s, phone=%s,
+phone_notification_on=%s, sms_n_days_advance=%s WHERE user_id=%s"""
+TOGGLE_USER_STATE = "UPDATE user SET active=not active WHERE id=%s"
+SELECT_ROLE = "SELECT role FROM user WHERE id=%s"
+
+
 @app.route("/view/users")
 @login_required('view_users')
 def view_users():
@@ -36,10 +46,7 @@ def notifications():
 
 def set_notification_defaults(form):
     cursor = mysql.connection.cursor()
-    cursor.execute("""SELECT email, designee_email, email_notification_on,
-                    notify_designee, email_every_n_days, phone,
-                    phone_notification_on, sms_n_days_advance FROM notification
-                    WHERE user_id=%s""", (current_user.id,))
+    cursor.execute(SELECT_NOTIFICATION, (current_user.id,))
     (form.primaryEmail.default, form.secondaryEmail.default,
         form.notifyPrimary.default, form.notifySecondary.default,
         form.numDays.default, form.phone.default, form.notifyPhone.default,
@@ -53,10 +60,7 @@ def update_notifications(form):
             form.numDays.data, form.phone.data, form.notifyPhone.data,
             form.daysBefore.data, current_user.id)
     cursor = mysql.connection.cursor()
-    cursor.execute("""UPDATE notification SET email=%s, designee_email=%s,
-                    email_notification_on=%s, notify_designee=%s,
-                    email_every_n_days=%s, phone=%s, phone_notification_on=%s,
-                    sms_n_days_advance=%s WHERE user_id=%s""", args)
+    cursor.execute(UPDATE_NOTIFICATION, args)
     mysql.connection.commit()
 
 
@@ -77,11 +81,11 @@ def toggle_user(id):
 
 def toggle_active_state(userId):
     cursor = mysql.connection.cursor()
-    cursor.execute("UPDATE user SET active=not active WHERE id=%s", (userId,))
+    cursor.execute(TOGGLE_USER_STATE, (userId,))
     mysql.connection.commit()
 
 
 def get_user_role(id):
     cursor = mysql.connection.cursor()
-    cursor.execute("SELECT role FROM user WHERE id=%s", (id,))
+    cursor.execute(SELECT_ROLE, (id,))
     return cursor.fetchone()[0]

@@ -6,33 +6,51 @@ from flask_login import current_user
 import datetime
 
 
+SELECT_FLOOR_CNT = "SELECT num_floors FROM facility WHERE id=1"
+SELECT_CLINICIANS = """SELECT CONCAT_WS(' ', first, last) FROM user WHERE role
+IN ('Physician', 'Nurse Practitioner') ORDER BY first, last"""
+SELECT_PATIENTS = """SELECT p.id, CONCAT_WS(' ', p.first, p.last), p.status,
+p.room_number,CONCAT_WS(' ', n.first, n.last), CONCAT_WS(' ', d.first, d.last),
+p.admittance_date FROM patient p LEFT JOIN user n ON n.id=p.np_id
+JOIN user d ON d.id=p.md_id WHERE p.status != 3"""
+SELECT_LAST_VISIT = """SELECT visit_date, visit_done_by_doctor FROM visit
+WHERE patient_id=%s ORDER BY visit_date desc LIMIT 1"""
+SELECT_SECOND_TO_LAST_VISIT = SELECT_LAST_VISIT + ", 1"
+INSERT_VISIT = """INSERT INTO VISIT (patient_id, visit_done_by_doctor,
+visit_date, create_user) VALUES (%s, %s, %s, %s)"""
+SELECT_VISIT_CNT = "SELECT * FROM VISIT WHERE patient_id=%s"
+PATIENT_MOVED_2_LONG_TERM_CARE = "UPDATE patient SET status=1 WHERE id=%s"
+
+
 @app.route("/upcoming/clinician", methods=['GET'])
 @login_required('upcoming_for_clinician')
 def upcoming_for_clinician():
-    patients = get_patient_info(current_user.id)
-    rows = format_patient_info(patients, True)
+    rows = format_patient_info(get_patient_info(current_user.id), True)
+    today = datetime.datetime.now().strftime('%Y-%m-%d')
     return render_template('upcoming_for_clinician.html', patients=rows,
-                           today=datetime.datetime.now().strftime('%Y-%m-%d'))
+                           today=today)
 
 
 @app.route("/upcoming", methods=['GET'])
 @login_required('upcoming_for_clerk')
 def upcoming_for_clerk():
-    patients = get_patient_info()
-    rows = format_patient_info(patients)
-    return render_template('upcoming_for_clerk.html', numFloors=get_num_floors(), clinicians=get_clinicians(), patients=rows,
-                           today=datetime.datetime.now().strftime('%Y-%m-%d'))
+    rows = format_patient_info(get_patient_info())
+    numFloors = get_num_floors()
+    clinicians = get_clinicians()
+    today = datetime.datetime.now().strftime('%Y-%m-%d')
+    return render_template('upcoming_for_clerk.html', numFloors=numFloors,
+                           clinicians=clinicians, patients=rows, today=today)
 
 
 def get_num_floors():
     cursor = mysql.connection.cursor()
-    cursor.execute("SELECT num_floors FROM facility WHERE id=1")
+    cursor.execute(SELECT_FLOOR_CNT)
     return cursor.fetchall()[0][0]
 
 
 def get_clinicians():
     cursor = mysql.connection.cursor()
-    cursor.execute("SELECT CONCAT_WS(' ', first, last) FROM user WHERE role IN ('Physician', 'Nurse Practitioner') ORDER BY first, last")
+    cursor.execute(SELECT_CLINICIANS)
     return [x[0] for x in cursor.fetchall()]
 
 
@@ -41,21 +59,15 @@ def get_patient_info(clinicianId=None):
     admitdate, last visit date, last visit by, second to last visit date,
     second to last visit by for all active patients"""
     patients = []
-    q = """SELECT p.id, CONCAT_WS(' ', p.first, p.last), p.status, p.room_number,
-    CONCAT_WS(' ', n.first, n.last), CONCAT_WS(' ', d.first, d.last),
-    p.admittance_date FROM patient p LEFT JOIN user n ON n.id=p.np_id
-    JOIN user d ON d.id=p.md_id WHERE p.status != 3"""
+    q = SELECT_PATIENTS
     if clinicianId:
         q += " AND (p.NP_ID=%s OR p.MD_ID=%s)" % (clinicianId, clinicianId)
-    lv = "SELECT max(visit_date), visit_done_by_doctor FROM visit WHERE patient_id={0}"
-    pv = """SELECT max(visit_date), visit_done_by_doctor FROM visit
-    WHERE patient_id={0} AND visit_date != (SELECT max(visit_date) FROM visit
-    WHERE patient_id={0})"""
     cursor = mysql.connection.cursor()
     cursor.execute(q)
     for p in cursor.fetchall():
-        for visit in [lv, pv]:
-            if cursor.execute(visit.format(p[0])):
+        pId = p[0]
+        for visit in [SELECT_LAST_VISIT, SELECT_SECOND_TO_LAST_VISIT]:
+            if cursor.execute(visit, (pId,)):
                 p += cursor.fetchone()
             else:
                 p += (None, None)
@@ -65,20 +77,20 @@ def get_patient_info(clinicianId=None):
 
 def format_patient_info(patients, forClinician=False):
     rows = []
-    for pId, pName, pStatus, rm, np, md, admit, lv, lvBy, pv, pvBy in patients:
+    for pId, pName, status, rm, np, md, admit, lv, lvBy, pv, pvBy in patients:
         if not lv:
             lvDesc = 'None'
         elif lvBy:
             lvDesc = lv.strftime('%b %d, Physician')
         else:
-            lvDesc = lv.strftime('%b %d, Nurse')
-        nv, nvBy = get_next_visit_date(pStatus, lv, lvBy, pv, pvBy, admit)
+            lvDesc = lv.strftime('%b %d, APRN')
+        nv, nvBy = get_next_visit_date(status, lv, lvBy, pv, pvBy, admit)
         nvDesc = nv.strftime('%A, %b %d ') + nvBy
         days = (nv - datetime.datetime.today().date()).days
         if forClinician:  # clinician sees stripped down view
             rows.append([pName, rm, lvDesc, nvDesc, days])
         else:
-            rows.append([pId, pName, pStatus, rm, np, md, lvDesc, nvDesc, days])
+            rows.append([pId, pName, status, rm, np, md, lvDesc, nvDesc, days])
     return sorted(rows, key=lambda x: x[-1])
 
 
@@ -87,11 +99,11 @@ def get_next_visit_date(pStatus, lv, lvBy, pv, pvBy, admit):
     who must administer the vist)"""
     if pStatus == 1:  # long term care
         nv = lv + datetime.timedelta(days=60)
-        nvBy = 'Nurse/Physician' if lvBy else 'Physician'
+        nvBy = 'APRN/Physician' if lvBy else 'Physician'
     else:
         lv = lv or admit
         nv = lv + datetime.timedelta(days=30)
-        nvBy = 'Nurse/Physician' if (lvBy or pvBy) else 'Physician'
+        nvBy = 'APRN/Physician' if (lvBy or pvBy) else 'Physician'
     return nv, nvBy
 
 
@@ -109,17 +121,13 @@ def upcoming_for_clerk_submit():
                 errors[visitDate] = 'This field is required'
     if errors or not visits:
         return jsonify(errors)
-    # queries
-    addVisit = """INSERT INTO VISIT (patient_id, visit_done_by_doctor,
-    visit_date, create_user) VALUES (%s, %s, %s, {})""".format(current_user.id)
-    numVisits = "SELECT * FROM VISIT WHERE patient_id=%s"
-    updatePstatus = "UPDATE patient SET status=1 WHERE id=%s"
     # add visits
+    curUser = current_user.id
     cursor = mysql.connection.cursor()
     for pId, pStatus, visitDate, visitBy in visits:
-        cursor.execute(addVisit, (pId, visitBy, visitDate))
-        if pStatus == '4' and cursor.execute(numVisits, (pId,)) > 2:
-            cursor.execute(updatePstatus, (pId,))
+        cursor.execute(INSERT_VISIT, (pId, visitBy, visitDate, curUser))
+        if pStatus == '4' and cursor.execute(SELECT_VISIT_CNT, (pId,)) > 2:
+            cursor.execute(PATIENT_MOVED_2_LONG_TERM_CARE, (pId,))
     mysql.connection.commit()
     flash('Successfully added %s patient visits!' % len(visits), 'success')
     return jsonify({})

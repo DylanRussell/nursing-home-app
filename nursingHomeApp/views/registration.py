@@ -1,13 +1,39 @@
 from __future__ import absolute_import
 from nursingHomeApp import app, mysql, lm, mail, bcrypt
 from flask import render_template, request, url_for, flash, redirect
-from nursingHomeApp.forms.registration_forms import LoginForm, AddUserForm, PasswordForm
+from nursingHomeApp.forms.registration_forms import LoginForm, AddUserForm,\
+    PasswordForm
 from nursingHomeApp.views.common import login_required
 from nursingHomeApp.config_safe import role2role
 from urlparse import urlparse, urljoin
 from flask_login import logout_user, login_user, current_user
 from itsdangerous import URLSafeTimedSerializer, BadSignature
 from flask_mail import Message
+from twilio.twiml.messaging_response import MessagingResponse
+
+
+OPT_OUT = """UPDATE notification SET email_notification_on=0, notify_designee=0,
+phone_notification_on=0 WHERE user_id=%s"""
+AUTHENTICATE_A_USER = """UPDATE user SET password=%s, confirmed_on=NOW(),
+email_confirmed=1 WHERE email=%s"""
+INSERT_USER = """INSERT INTO user (role, first, last, email, phone, create_user)
+VALUES (%s, %s, %s, %s, %s, %s)"""
+INSERT_NOTIFICATION = """INSERT INTO notification (email, phone, user_id,
+create_user) VALUES (%s, %s, %s, %s)"""
+SELECT_USER = """SELECT id, role, first, last, email, floor, active,
+email_confirmed FROM USER WHERE (id=%s or email=%s)"""
+
+
+@app.route("/sms", methods=['GET', 'POST'])
+def sms_reply():
+    """Respond to incoming calls with a simple text message."""
+    # Start our TwiML response
+    resp = MessagingResponse()
+
+    # Add a message
+    resp.message("Please visit www.visitMinder.com for more info.")
+
+    return str(resp)
 
 
 @app.route("/opt/out/<int:userId>")
@@ -19,8 +45,7 @@ def opt_out_page(userId):
 
 def opt_out_user(userId):
     cursor = mysql.connection.cursor()
-    cursor.execute("""UPDATE notification SET email_notification_on=0, notify_designee=0,
-                    phone_notification_on=0 WHERE user_id=%s""", (userId,))
+    cursor.execute(OPT_OUT, (userId,))
     mysql.connection.commit()
 
 
@@ -30,9 +55,9 @@ def logout():
     return redirect(url_for('login'))
 
 
-@app.before_request
-def before_request():
-    app.jinja_env.cache = {}
+@app.errorhandler(500)
+def page_not_found(e):
+    return render_template('500.html'), 500
 
 
 @lm.user_loader
@@ -49,13 +74,13 @@ def login():
             login_user(user)
             flash('Logged in successfully!', 'success')
             next = request.args.get('next')
-            if next and is_safe_url(next):  # need to test an invalid url...
+            if next and is_safe_url(next):
                 return redirect(next)
             if current_user.role in {'Nurse Practitioner', 'Physician'}:
                 return redirect(url_for('upcoming_for_clinician'))
             else:
                 return redirect(url_for('upcoming_for_clerk'))
-        flash('The account associated with this email has been deactivated.', 'danger')
+        flash('The account linked to this email has been deactivated.', 'danger')
     return render_template('login.html', form=form)
 
 
@@ -71,8 +96,10 @@ def add_user():
         token = generate_confirmation_token(form.email.data)
         invitation_url = url_for('confirm_email', token=token, _external=True)
         opt_out_url = url_for('opt_out_page', userId=userId, _external=True)
-        msg.html = render_template('invitation.html', url=invitation_url, first=form.first.data,
-                                   last=form.last.data, role=form.role.data, opt_out_url=opt_out_url)
+        msg.html = render_template('invitation.html', url=invitation_url,
+                                   first=form.first.data, last=form.last.data,
+                                   role=form.role.data,
+                                   opt_out_url=opt_out_url)
         mail.send(msg)
         flash('User successfully added!', 'success')
         return redirect(url_for('add_user'))
@@ -90,7 +117,7 @@ def confirm_email(token):
     if user.role == 'Physician':
         name = 'Doctor ' + user.last
     else:
-        name = user.first + ' ' + user.name
+        name = user.first + ' ' + user.last
     if form.validate_on_submit():
         authenticate_user(email, form.pw1.data)
         if user.active:
@@ -123,8 +150,7 @@ def confirm_token(token, expiration=3600):
 
 def authenticate_user(email, password):
     cursor = mysql.connection.cursor()
-    cursor.execute("""UPDATE user SET password=%s, confirmed_on=NOW(),
-                    email_confirmed=1 WHERE email=%s""",
+    cursor.execute(AUTHENTICATE_A_USER,
                    (bcrypt.generate_password_hash(password), email))
     mysql.connection.commit()
 
@@ -133,9 +159,7 @@ def create_user(form):
     cursor = mysql.connection.cursor()
     args = (form.role.data, form.first.data.title(), form.last.data.title(),
             form.email.data, form.phone.data, current_user.id)
-    cursor.execute("""INSERT INTO user (role, first, last, email,
-                        phone, create_user) VALUES
-                        (%s, %s, %s, %s, %s, %s)""", args)
+    cursor.execute(INSERT_USER, args)
     mysql.connection.commit()
     return cursor.lastrowid
 
@@ -143,9 +167,8 @@ def create_user(form):
 def create_notification(form, userId):
     if form.role.data in {'Nurse Practitioner', 'Physician'}:
         cursor = mysql.connection.cursor()
-        cursor.execute("""INSERT INTO notification (email, phone, user_id,
-                        create_user) VALUES (%s, %s, %s, %s)""",
-                        (form.email.data, form.phone.data, userId, current_user.id))
+        cursor.execute(INSERT_NOTIFICATION, (form.email.data, form.phone.data,
+                       userId, current_user.id))
         mysql.connection.commit()
 
 
@@ -159,9 +182,7 @@ def is_safe_url(target):
 class User():
     def __init__(self, email=None, id=None):
         cursor = mysql.connection.cursor()
-        cursor.execute("""SELECT id, role, first, last, email, floor, active,
-                email_confirmed FROM USER WHERE (id=%s or email=%s)""",
-                    (id, email))
+        cursor.execute(SELECT_USER, (id, email))
         self.id, self.role, self.first, self.last, self.email, self.floor,\
             self.active, self.confirmed = cursor.fetchall()[0]
 

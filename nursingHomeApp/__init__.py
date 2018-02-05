@@ -16,4 +16,9 @@ lm.login_view = 'login'
 mysql = MySQL(app)
 bcrypt = Bcrypt(app)
 mail = Mail(app)
+
+if not app.debug:
+    from nursingHomeApp.flask_mail_handler import register_mail_error_handler
+    register_mail_error_handler(app, mail)
+
 import nursingHomeApp.views.registration, nursingHomeApp.views.users, nursingHomeApp.views.patients, nursingHomeApp.views.visits
