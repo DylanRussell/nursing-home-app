@@ -9,13 +9,16 @@ import datetime
 SELECT_FLOOR_CNT = "SELECT num_floors FROM facility WHERE id=1"
 SELECT_CLINICIANS = """SELECT CONCAT_WS(' ', first, last) FROM user WHERE role
 IN ('Physician', 'Nurse Practitioner') ORDER BY first, last"""
-SELECT_PATIENTS = """SELECT p.id, CONCAT_WS(' ', p.first, p.last), p.status,
+SELECT_PATIENTS = """SELECT p.id, CONCAT_WS(' ', p.first, p.last), s.status,
 p.room_number,CONCAT_WS(' ', n.first, n.last), CONCAT_WS(' ', d.first, d.last),
-p.admittance_date FROM patient p LEFT JOIN user n ON n.id=p.np_id
+p.admittance_date, p.has_medicaid FROM patient p
+JOIN patient_status s ON s.id=p.status
+LEFT JOIN user n ON n.id=p.np_id
 JOIN user d ON d.id=p.md_id WHERE p.status != 3"""
-SELECT_LAST_VISIT = """SELECT visit_date, visit_done_by_doctor FROM visit
+SELECT_LAST_VISIT = """SELECT visit_date FROM visit
 WHERE patient_id=%s ORDER BY visit_date desc LIMIT 1"""
-SELECT_SECOND_TO_LAST_VISIT = SELECT_LAST_VISIT + ", 1"
+SELECT_LAST_DR_VISIT = """SELECT visit_date FROM visit WHERE patient_id=%s
+AND visit_done_by_doctor=1 ORDER BY visit_date desc LIMIT 1"""
 INSERT_VISIT = """INSERT INTO VISIT (patient_id, visit_done_by_doctor,
 visit_date, create_user) VALUES (%s, %s, %s, %s)"""
 SELECT_VISIT_CNT = "SELECT * FROM VISIT WHERE patient_id=%s"
@@ -56,8 +59,8 @@ def get_clinicians():
 
 def get_patient_info(clinicianId=None):
     """Gets patients id, name, status, room no, nurse's name, doctor's name,
-    admitdate, last visit date, last visit by, second to last visit date,
-    second to last visit by for all active patients"""
+    admit date, last visit date, last visit by doctor date for all active
+    patients"""
     patients = []
     q = SELECT_PATIENTS
     if clinicianId:
@@ -66,45 +69,50 @@ def get_patient_info(clinicianId=None):
     cursor.execute(q)
     for p in cursor.fetchall():
         pId = p[0]
-        for visit in [SELECT_LAST_VISIT, SELECT_SECOND_TO_LAST_VISIT]:
+        for visit in [SELECT_LAST_VISIT, SELECT_LAST_DR_VISIT]:
             if cursor.execute(visit, (pId,)):
                 p += cursor.fetchone()
             else:
-                p += (None, None)
+                p += (None,)
         patients.append(p)
     return patients
 
 
 def format_patient_info(patients, forClinician=False):
     rows = []
-    for pId, pName, status, rm, np, md, admit, lv, lvBy, pv, pvBy in patients:
+    for pId, name, status, rm, np, md, admit, mcaid, lv, lvByDr in patients:
         if not lv:
             lvDesc = 'None'
-        elif lvBy:
-            lvDesc = lv.strftime('%b %d, Physician')
+        elif lvByDr == lv:
+            lvDesc = lv.strftime('%Y-%m-%d, Physician')
         else:
-            lvDesc = lv.strftime('%b %d, APRN')
-        nv, nvBy = get_next_visit_date(status, lv, lvBy, pv, pvBy, admit)
-        nvDesc = nv.strftime('%A, %b %d ') + nvBy
-        days = (nv - datetime.datetime.today().date()).days
+            lvDesc = lv.strftime('%Y-%m-%d, APRN')
+        nv, nvByDr = get_next_visit_dates(status, lv, lvByDr, admit, mcaid)
+        nvDesc, nvByDrDesc = (dt.strftime('%A, %b %d') for dt in (nv, nvByDr))
+        # number of days until due date
+        nvDays = (nv - datetime.datetime.today().date()).days
+        nvByDrDays = (nvByDr - datetime.datetime.today().date()).days
         if forClinician:  # clinician sees stripped down view
-            rows.append([pName, rm, lvDesc, nvDesc, days])
+            rows.append([name, rm, lvDesc, nvDesc, nvDays, nvByDrDesc, nvByDrDays])
         else:
-            rows.append([pId, pName, status, rm, np, md, lvDesc, nvDesc, days])
-    return sorted(rows, key=lambda x: x[-1])
+            rows.append([pId, name, status, rm, np, md, lvDesc, nvDesc, nvDays, nvByDrDesc, nvByDrDays])
+    return sorted(rows, key=lambda x: x[-3])
 
 
-def get_next_visit_date(pStatus, lv, lvBy, pv, pvBy, admit):
-    """Returns: (The date a patient must be seen by,
-    who must administer the vist)"""
-    if pStatus == 1:  # long term care
+def get_next_visit_dates(status, lv, lvByDr, admit, mcaid):
+    """Returns: Next patient visit, next patient visit that must be
+    administered by a doctor"""
+    lv = lv or admit
+    if status == 'Long Term Care':
         nv = lv + datetime.timedelta(days=60)
-        nvBy = 'APRN/Physician' if lvBy else 'Physician'
+        nvByDr = lvByDr + datetime.timedelta(days=120 if not mcaid else 365)
     else:
-        lv = lv or admit
         nv = lv + datetime.timedelta(days=30)
-        nvBy = 'APRN/Physician' if (lvBy or pvBy) else 'Physician'
-    return nv, nvBy
+        if not lvByDr or lv > lvByDr:
+            nvByDr = lv + datetime.timedelta(days=30)
+        else:
+            nvByDr = lv + datetime.timedelta(days=60)
+    return nv, nvByDr
 
 
 @app.route("/submit/upcoming", methods=['POST'])

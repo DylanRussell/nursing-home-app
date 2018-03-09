@@ -12,10 +12,10 @@
       <div class="panel-heading">Example Patient CSV File <a href="{{url_for('static', filename='patients_template.csv')}}" download>(Download)</a></div>
       <ul class="list-group">
         <li class="list-group-item">
-          Patient's First Name, Patient's Last Name, Room Number, Patient's Status, Patient's Doctor, Patient's Nurse, Last Visit Date, Last Visit By a Doctor?, Second to Last Visit Date, Second to Last Visit by a Doctor?, Admittance Date<br>
-          John, Doe, 233, Long Term Care, Doctor Smith, Nurse Smith, 2017-05-05, Yes, 2017-04-04, Yes,<br>
-          Jane, Doe, 119, New Admission, Doctor Smith, Nurse Smith,,,,,2017-11-09<br>
-          John, Smith, 484, Skilled Care, Doctor Smith,, 2017-05-05, Yes, 2017-04-04, Yes,
+          Patient's First Name, Patient's Last Name, Room Number, Patient's Status, Patient's Doctor, Patient's Nurse, Last Visit Date, Last Visit by Doctor Date, Admittance Date, Has Medicaid?<br>
+          John, Doe, 233, Long Term Care, Doctor Smith, Nurse Smith, 2017-05-05, 2017-04-04, 2017-03-03, Yes<br>
+          Jane, Doe, 133, New Admission, Doctor Smith, Nurse Smith,,, 2017-03-03, No<br>
+          Jane, Doe, 133, Skilled Care, Doctor Smith,,2017-06-06,2017-04-09, 2017-03-03, No
         </li>
         </ul>
     </div>
@@ -24,12 +24,13 @@
         <ul class="list-group">
             <li class="list-group-item">File must be in csv format, and have a header row followed by any number of rows of data.</li>
             <li class="list-group-item">Each row of data must have the following fields, in this order (leave optional fields blank if not applicable):<br><br>
-              Patient's First Name (Required), Patient's Last Name (Required), Room Number (Required), Patient's Status (Required), Patient's Doctor (Required), Patient's Nurse (Optional), Last Visit Date (Optional), Last Visit By a Doctor? (Optional), Second to Last Visit Date (Optional), Second to Last Visit by a Doctor? (Optional), Admittance Date (Only required if patient is new admission)
+              Patient's First Name (Required), Patient's Last Name (Required), Room Number (Required), Patient's Status (Required), Patient's Doctor (Required), Patient's Nurse (Optional), Last Visit Date (Optional), Last Visit by Doctor Date (Optional), Admittance Date (Only required if patient is new admission), Has Medicaid (Optional)
             </li>
             <li class="list-group-item">Patient's Status Must be one of the Following: Long Term Care, Skilled Care, New Admission
             </li>
             <li class="list-group-item">Dates must be in the format: YYYY-mm-dd. Ex: 2017-10-20</li>
             <li class="list-group-item">Any Doctor or Nurse named in the file must have been added as a user for visitMinder.</li>
+            <li class="list-group-item">If a patient has medicaid put Yes in that column, otherwise put No or leave it empty.</li>
         </ul>
     </div>
 {% block footer %}

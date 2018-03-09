@@ -48,6 +48,7 @@
         {% else %}
           <li class="{{'active' if request.endpoint == 'view_patients' }}"><a href="{{url_for('view_patients')}}">View Your Patients</a></li>
           <li class="{{'active' if request.endpoint == 'upcoming_for_clinician' }}"><a href="{{url_for('upcoming_for_clinician')}}">Upcoming Visits</a></li>
+          <li class="{{'active' if request.endpoint == 'notifications' }}"><a href="{{url_for('notifications')}}">My Notifications</a></li>
         {% endif %}
       </ul>
       <ul class="nav navbar-nav navbar-right">

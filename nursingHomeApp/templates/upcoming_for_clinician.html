@@ -15,17 +15,33 @@
               <th>Name</th>
               <th>Room</th>
               <th>Last Visit</th>
-              <th>Due Date</th>
+              <th>Due Date for Next Visit</th>
               <th># of Days</th>
+              <th>Due Date for Next Doctor Visit</th>
+              <th># of Doc Days</th>
             </tr>
           </thead>
-            {% for pName, rm, lvDesc, nvDesc, days in patients %}
+            {% for name, rm, lvDesc, nvDesc, nvDays, nvByDrDesc, nvByDrDays in patients %}
               <tr>
-                <td>{{pName}}</td>
+                <td>{{name}}</td>
                 <td>{{rm}}</td>
                 <td>{{lvDesc}}</td>
-                <td class="{{'danger' if days <= 0}}">{{nvDesc}}</td>
-                <td>{{days}}</td>
+                {% if nvDays <= 0 %}
+                  <td class="danger">{{nvDesc}}</td>
+                {% elif nvDays <= 21 %}
+                  <td class="warning">{{nvDesc}}</td>
+                {% else %}
+                  <td class="success">{{nvDesc}}</td>
+                {% endif %}
+                <td>{{nvDays}}</td>
+                {% if nvByDrDays <= 0 %}
+                  <td class="danger">{{nvByDrDesc}}</td>
+                {% elif nvByDrDays <= 21 %}
+                  <td class="warning">{{nvByDrDesc}}</td>
+                {% else %}
+                  <td class="success">{{nvByDrDesc}}</td>
+                {% endif %}
+                <td>{{nvByDrDays}}</td>
               </tr>
             {% endfor %}
           <tbody>
@@ -40,6 +56,23 @@
 {% block scripts %}
 {{super()}}
 <script type="text/javascript">
-  var table = $('#upcoming').DataTable({"aaSorting": []});
+  var table = $('#upcoming').DataTable({
+      "aaSorting": [],
+      columnDefs: [
+                    {
+                    targets: [ 3 ],
+                    orderData: [ 4 ]
+                    },
+                    {
+                    targets: [ 5 ],
+                    orderData: [ 6 ]
+                    },
+                    {
+                      targets: [ 4, 6 ],
+                      "visible": false,
+                      "searchable": false
+                    }
+                  ]
+      });
 </script>
 {% endblock %}

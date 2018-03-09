@@ -10,14 +10,14 @@ import StringIO, csv
 
 
 PATIENT_INSERT = """INSERT INTO patient (first, last, room_number, status,
-md_id, np_id, admittance_date, create_user) VALUES
-(%s, %s, %s, %s, %s, %s, %s, %s)"""
+md_id, np_id, admittance_date, create_user, has_medicaid) VALUES
+(%s, %s, %s, %s, %s, %s, %s, %s, %s)"""
 VISIT_INSERT = """INSERT INTO VISIT (patient_id, visit_date,
 visit_done_by_doctor, create_user) VALUES (%s, %s, %s, %s)"""
-SELECT_PATIENT = """SELECT p.first, p.last, p.room_number, p.status, p.md_id,
-p.np_id FROM patient p WHERE id=%s"""
+SELECT_PATIENT = """SELECT first, last, room_number, status, md_id, np_id,
+has_medicaid FROM patient p WHERE id=%s"""
 UPDATE_PATIENT = """UPDATE patient SET first=%s, last=%s, room_number=%s,
-status=%s, md_id=%s, np_id=%s, update_user=%s WHERE id=%s"""
+status=%s, md_id=%s, np_id=%s, update_user=%s, has_medicaid=%s WHERE id=%s"""
 SELECT_USER_ID = "SELECT id FROM USER WHERE CONCAT_WS(' ', first, last)=%s"
 SELECT_PATIENT_STATUS = "SELECT id FROM patient_status WHERE status=%s"
 SELECT_FLOOR_CNT = "SELECT num_floors FROM facility WHERE id=1"
@@ -56,14 +56,14 @@ def set_patient_defaults(form):
     cursor.execute(SELECT_PATIENT, (form.patientId.data,))
     (form.first.default, form.last.default, form.room.default,
         form.status.default, form.md.default,
-        form.np.default) = cursor.fetchone()
+        form.np.default, form.medicaid.default) = cursor.fetchone()
     form.process()
 
 
 def update_patient_data(form):
     args = (form.first.data.title(), form.last.data.title(), form.room.data,
-            form.status.data, form.md.data,
-            form.np.data, current_user.id, form.patientId.data)
+            form.status.data, form.md.data, form.np.data, current_user.id,
+            form.medicaid.data, form.patientId.data)
     cursor = mysql.connection.cursor()
     cursor.execute(UPDATE_PATIENT, args)
     mysql.connection.commit()
@@ -98,20 +98,22 @@ def add_patient():
 
 def create_prior_visits(form, patientId):
     cursor = mysql.connection.cursor()
-    if form.priorVisit.data:
-        args = (patientId, form.priorVisit.data, form.priorVisitBy.data, current_user.id)
+    if form.priorVisit.data and form.priorVisit.data != form.lastVisit.data:
+        args = (patientId, form.priorVisit.data, 1, current_user.id)
         cursor.execute(VISIT_INSERT, args)
     if form.lastVisit.data:
-        args = (patientId, form.lastVisit.data, form.lastVisitBy.data, current_user.id)
+        lvBy = int(form.lastVisit.data == form.priorVisit.data)
+        args = (patientId, form.lastVisit.data, lvBy, current_user.id)
         cursor.execute(VISIT_INSERT, args)
-    if form.lastVisit.data or form.priorVisit.data:
+        # cannot have a prior visit without a last visit so safe to commit here
         mysql.connection.commit()
 
 
 def create_patient(form):
     cursor = mysql.connection.cursor()
     args = (form.first.data, form.last.data, form.room.data, form.status.data,
-            form.md.data, form.np.data, form.admittance.data, current_user.id)
+            form.md.data, form.np.data, form.admittance.data, current_user.id,
+            form.medicaid.data)
     cursor.execute(PATIENT_INSERT, args)
     mysql.connection.commit()
     return cursor.lastrowid
@@ -120,7 +122,7 @@ def create_patient(form):
 def get_patients():
     q = """SELECT p.first, p.last, p.room_number, s.status,
     CONCAT_WS(' ', m.first, m.last), CONCAT_WS(' ', n.first, n.last),
-    p.id FROM patient p LEFT JOIN user m ON m.id=p.md_id
+    p.has_medicaid, p.id FROM patient p LEFT JOIN user m ON m.id=p.md_id
     LEFT JOIN user n ON n.id=p.np_id
     JOIN patient_status s ON s.id=p.status WHERE 1=1"""
     if current_user.role == 'Nurse Practitioner':
@@ -139,8 +141,8 @@ def get_num_floors():
 
 
 def get_patients_for_csv():
-    h = (('First Name', 'Last Name', 'Room', 'Status', 'MD Name', 'NP Name'),)
-    return h + get_patients()
+    h = [('First Name', 'Last Name', 'Room', 'Status', 'MD Name', 'NP Name', 'Has Medicaid')]
+    return h + [x[:-1] for x in get_patients()]
 
 
 def load_patient_data(form):
@@ -150,17 +152,18 @@ def load_patient_data(form):
     for row in reader:
         if not any(row):
             continue
-        first, last, room, state, md, np, lv, lvBy, pv, pvBy, admittance = row
+        first, last, room, state, md, np, lv, lvByDr, admit, medicaid = row
+        medicaid = int(medicaid.lower().strip() == 'yes')
         first, last, md, np, state = [clean_text(x) for x in (first, last, md, np, state)]
-        lv, pv, admittance = [x or None for x in (lv, pv, admittance)]
+        lv, lvByDr, admit = [x or None for x in (lv, lvByDr, admit)]
         state, md, np = get_status_int(state), get_user_id(md), get_user_id(np)
         cursor.execute(PATIENT_INSERT, (first, last, room, state, md, np,
-                                        admittance, current_user.id))
+                                        admit, current_user.id, medicaid))
         pId = cursor.lastrowid
-        if pv:
-            cursor.execute(VISIT_INSERT, (pId, pv, pvBy, current_user.id))
-        if lv:
-            cursor.execute(VISIT_INSERT, (pId, lv, lvBy, current_user.id))
+        if lvByDr:
+            cursor.execute(VISIT_INSERT, (pId, lvByDr, 1, current_user.id))
+        if lv and lvByDr != lv:
+            cursor.execute(VISIT_INSERT, (pId, lv, 0, current_user.id))
     mysql.connection.commit()
 
 

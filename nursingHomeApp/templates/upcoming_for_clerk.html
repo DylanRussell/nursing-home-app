@@ -32,25 +32,41 @@
             <tr>
               <th>Name</th>
               <th>Room</th>
-              <th>APRN</th>
+              <!-- <th>APRN</th> -->
               <th>Physician</th>
               <th>Last Visit</th>
-              <th>Due Date</th>
+              <th>Due Date for Next Visit</th>
               <th># of Days</th>
+              <th>Due Date for Doctor Visit</th>
+              <th># of Days Before Doc Visit</th>
               <th>Visited?</th>
               <th>Visited By?</th>
               <th>Visited On?</th>
             </tr>
           </thead>
-            {% for pId, pName, pStatus, rm, np, md, lvDesc, nv, days in patients %}
+            {% for pId, name, status, rm, np, md, lvDesc, nvDesc, nvDays, nvByDrDesc, nvByDrDays in patients %}
               <tr>
-                <td>{{pName}}</td>
+                <td>{{name}} ({{status}})</td>
                 <td>{{rm}}</td>
-                <td>{{np}}</td>
+                <!-- <td>{{np}}</td> -->
                 <td>{{md}}</td>
                 <td>{{lvDesc}}</td>
-                <td class="{{'danger' if days <= 0}}">{{nv}}</td>
-                <td>{{days}}</td>
+                {% if nvDays <= 0 %}
+                  <td class="danger">{{nvDesc}}</td>
+                {% elif nvDays <= 21 %}
+                  <td class="warning">{{nvDesc}}</td>
+                {% else %}
+                  <td class="success">{{nvDesc}}</td>
+                {% endif %}
+                <td>{{nvDays}}</td>
+                {% if nvByDrDays <= 0 %}
+                  <td class="danger">{{nvByDrDesc}}</td>
+                {% elif nvByDrDays <= 21 %}
+                  <td class="warning">{{nvByDrDesc}}</td>
+                {% else %}
+                  <td class="success">{{nvByDrDesc}}</td>
+                {% endif %}
+                <td>{{nvByDrDays}}</td>
                 <td>
                   <input type="hidden" name="{{pId}}_status" value="{{pStatus}}">
                   <input type="checkbox" name="{{pId}}_visited" id="{{pId}}_visited" class="form-control">
@@ -85,7 +101,24 @@
   $('.datepicker').datepicker({
     'endDate': '0d'
   })
-  var table = $('#upcoming').DataTable({"aaSorting": []});
+  var table = $('#upcoming').DataTable({
+      "aaSorting": [],
+      columnDefs: [
+                {
+                  targets: [ 4 ],
+                  orderData: [ 5 ]
+                },
+                {
+                  targets: [ 6 ],
+                  orderData: [ 7 ]
+                },
+                {
+                  targets: [ 5, 7 ],
+                  "visible": false,
+                  "searchable": false
+                }
+                ]
+      });
   $('#submitform').click(function() {
     var data = table.$('input').serialize();
     $.ajax({url: $SCRIPT_ROOT + "/submit/upcoming",

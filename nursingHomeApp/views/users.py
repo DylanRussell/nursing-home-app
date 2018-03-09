@@ -4,6 +4,7 @@ from flask import render_template, flash, redirect, url_for
 from nursingHomeApp.views.common import login_required
 from flask_login import current_user
 from nursingHomeApp.forms.notification_forms import NotificationForm
+import flask, datetime
 
 
 SELECT_NOTIFICATION = """SELECT email, designee_email, email_notification_on,
@@ -14,6 +15,14 @@ email_notification_on=%s, notify_designee=%s, email_every_n_days=%s, phone=%s,
 phone_notification_on=%s, sms_n_days_advance=%s WHERE user_id=%s"""
 TOGGLE_USER_STATE = "UPDATE user SET active=not active WHERE id=%s"
 SELECT_ROLE = "SELECT role FROM user WHERE id=%s"
+
+
+@app.before_request
+def before_request():
+    flask.session.permanent = True
+    app.permanent_session_lifetime = datetime.timedelta(minutes=20)
+    flask.session.modified = True
+    flask.g.user = current_user
 
 
 @app.route("/view/users")

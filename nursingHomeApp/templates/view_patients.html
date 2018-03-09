@@ -23,10 +23,11 @@
                 <th>First</th>
                 <th>Last</th>
                 <th>Room #</th>
-                <th>Status</th>
-                <th>Physician</th>
-                <th>APRN</th>
                 {% if current_user.role not in ['Physician', 'Nurse Practitioner'] %}
+                  <th>Status</th>
+                  <th>Physician</th>
+                <!-- <th>APRN</th> -->
+                  <th>Has Medicaid?</th>
                   <th>Update Patient</th>
                 {% endif %}
             </tr>
@@ -37,21 +38,24 @@
                   <td>{{patient[0]}}</td>
                   <td>{{patient[1]}}</td>
                   <td>{{patient[2]}}</td>
-                  <td>{{patient[3]}}</td>
-                  <td>{{patient[4]}}</td>
-                  <td>{{patient[5]}}</td>
                   {% if current_user.role not in ['Physician', 'Nurse Practitioner'] %}
-                    <td><a href="{{url_for('update_patient', id=patient[6])}}">Update Patient</a></td>
+                    <td>{{patient[3]}}</td>
+                    <td>{{patient[4]}}</td>
+                  <!-- <td>{{patient[5]}}</td> -->
+                    <td>{{ 'Yes' if patient[6] else 'No' }}</td>
+                    <td><a href="{{url_for('update_patient', id=patient[7])}}">Update Patient</a></td>
                   {% endif %}
               </tr>
             {% endfor %}
         </tbody>
       </table>
-      <form method="POST" action="" class="col-md-12 form-horizontal">
-        <div class="form-group">
-          <button type="submit" class="btn btn-success">Download</button>
-        </div>
-      </form>
+      {% if current_user.role not in ['Physician', 'Nurse Practitioner'] %}
+        <form method="POST" action="" class="col-md-12 form-horizontal">
+          <div class="form-group">
+            <button type="submit" class="btn btn-success">Download</button>
+          </div>
+        </form>
+      {% endif %}
 {% block footer %}
 {{super()}}
 {% endblock %}
