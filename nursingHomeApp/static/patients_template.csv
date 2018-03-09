@@ -1,4 +1,4 @@
-Patient's First Name, Patient's Last Name, Room Number, Patient's Status, Patient's Doctor, Patient's Nurse, Last Visit Date, Last Visit By a Doctor?, Second to Last Visit Date, Second to Last Visit by a Doctor?, Admittance Date
-John, Doe, 233, Long Term Care, Doctor Smith, Nurse Smith, 2017-05-05, Yes, 2017-04-04, Yes,
-Jane, Doe, 119, New Admission, Doctor Smith, Nurse Smith,,,,,2017-11-09
-John, Smith, 484, Skilled Care, Doctor Smith,, 2017-05-05, Yes, 2017-04-04, Yes,
+Patient's First Name, Patient's Last Name, Room Number, Patient's Status, Patient's Doctor, Patient's Nurse, Last Visit Date, Last Visit by Doctor Date, Admittance Date, Has Medicare?
+John, Doe, 233, Long Term Care, Doctor Smith, Nurse Smith, 2017-05-05, 2017-04-04, 2017-03-03, Yes
+Jane, Doe, 133, New Admission, Doctor Smith, Nurse Smith,,, 2017-03-03, No
+Jane, Doe, 133, Skilled Care, Doctor Smith,,2017-06-06,2017-04-09, 2017-03-03, No

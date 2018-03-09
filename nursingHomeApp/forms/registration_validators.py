@@ -25,10 +25,10 @@ def is_valid_email(form, field):
 
 def is_valid_pw(form, field):
     cursor = mysql.connection.cursor()
-    cursor.execute(SELECT_PW, (form.email.data,))
-    pw = cursor.fetchall()[0][0]
-    if not bcrypt.check_password_hash(pw, form.pw.data):
-        raise ValidationError('Incorrect Password')
+    if cursor.execute(SELECT_PW, (form.email.data,)):
+        pw = cursor.fetchall()[0][0]
+        if not bcrypt.check_password_hash(pw, form.pw.data):
+            raise ValidationError('Incorrect Password')
 
 
 def is_same_pw(form, field):
