@@ -24,6 +24,9 @@
       </div>
     {% endfor %}
     {{ wtf.quick_form(form, form_type='horizontal', horizontal_columns=('md', 4, 4), button_map={'submit': 'success'}) }}
+    <div class="col-md-4 col-md-offset-4">
+      <a href="{{url_for('forgot_pword')}}">Forgot Your Password?</a>
+    </div>
   </div>
 {% block footer %}
 {{super()}}

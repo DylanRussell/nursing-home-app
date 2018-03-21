@@ -35,9 +35,9 @@
               <!-- <th>APRN</th> -->
               <th>Physician</th>
               <th>Last Visit</th>
-              <th>Due Date for Next Visit</th>
+              <th>Next Visit Due (Doctor or Nurse)</th>
               <th># of Days</th>
-              <th>Due Date for Doctor Visit</th>
+              <th>Next Required Doctor Visit</th>
               <th># of Days Before Doc Visit</th>
               <th>Visited?</th>
               <th>Visited By?</th>
@@ -125,6 +125,9 @@
             data: data,
             method: 'POST',
             success: function(result){
+              if ('url' in result) {
+                window.location = result['url']
+              }
               if (Object.keys(result).length != 0) {
                 for (var key in result){
                   $("#" + key).parent().append("<p class='help-block' style='color:#a94442'>" + result[key] + "</p>");

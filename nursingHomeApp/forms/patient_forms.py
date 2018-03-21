@@ -5,7 +5,7 @@ from wtforms import SubmitField, StringField, DateField, BooleanField,\
 from wtforms.validators import DataRequired, Optional
 from wtforms_components import SelectField
 from wtforms_components import DateRange
-from datetime import datetime
+from datetime import datetime, date
 from nursingHomeApp.forms.patient_validators import check_if_required,\
     admittance_date_validations, can_status_change, validate_num_lines,\
     validate_line_len, validate_date_format, validate_required_fields,\
@@ -26,9 +26,9 @@ class AddPatientForm(FlaskForm):
                      choices=get_all_mds, coerce=int)
     np = SelectField("Patient's APRN", validators=[Optional()],
                      choices=get_all_nps, filters=[STR_2_NONE])
-    lastVisit = DateField('Last Visited Date', validators=[Optional(), DateRange(max=datetime.now().date), gte_prior_visit])
-    priorVisit = DateField('Last Visited by Doctor Date', validators=[Optional(), DateRange(max=datetime.now().date)])
-    admittance = DateField('Admittance Date', validators=[Optional(), DateRange(max=datetime.now().date), admittance_date_validations])
+    lastVisit = DateField('Last Visited Date', validators=[Optional(), DateRange(max=date.today()), gte_prior_visit])
+    priorVisit = DateField('Last Visited by Doctor Date', validators=[Optional(), DateRange(max=date.today())])
+    admittance = DateField('Admittance Date', validators=[Optional(), DateRange(max=date.today()), admittance_date_validations])
     medicaid = BooleanField('Is patient insured through Medicaid?')
     submit = SubmitField('Add')
 

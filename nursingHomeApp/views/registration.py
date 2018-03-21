@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from nursingHomeApp import app, mysql, lm, mail, bcrypt
 from flask import render_template, request, url_for, flash, redirect
 from nursingHomeApp.forms.registration_forms import LoginForm, AddUserForm,\
-    PasswordForm
+    PasswordForm, NewPasswordForm, EmailForm
 from nursingHomeApp.views.common import login_required
 from nursingHomeApp.config_safe import role2role
 from urlparse import urlparse, urljoin
@@ -63,6 +63,40 @@ def page_not_found(e):
 @lm.user_loader
 def load_user(id):
     return User(id=id)
+
+
+@app.route('/reset/<token>', methods=["GET", "POST"])
+def reset_password(token):
+    email = confirm_token(token)
+    if not email:
+        flash('The reset password link is invalid or has expired.', 'danger')
+        return redirect(url_for('forgot_pword'))
+    form = NewPasswordForm()
+    user = User(email=email)
+    if form.validate_on_submit():
+        authenticate_user(email, form.pw1.data)
+        if user.active:
+            login_user(user)
+            flash('Your password has been reset!', 'success')
+            if current_user.role in {'Nurse Practitioner', 'Physician'}:
+                return redirect(url_for('upcoming_for_clinician'))
+            return redirect(url_for('upcoming_for_clerk'))
+        flash('The account associated with this email has been deactivated.', 'danger')
+        return redirect(url_for('login'))
+    return render_template('new_password.html', form=form)
+
+
+@app.route('/forgot', methods=['GET', 'POST'])
+def forgot_pword():
+    form = EmailForm()
+    if form.validate_on_submit():
+        msg = Message("Reset Your Password", recipients=[form.email.data])
+        token = generate_confirmation_token(form.email.data)
+        reset_url = url_for('reset_password', token=token, _external=True)
+        msg.html = render_template('reset_pw_email.html', url=reset_url)
+        mail.send(msg)
+        flash('An e-mail has been sent with a link for you to reset your password.', 'success')
+    return render_template('reset_password.html', form=form)
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -136,7 +170,7 @@ def generate_confirmation_token(email):
     return serializer.dumps(email, salt='invitation')
 
 
-def confirm_token(token, expiration=3600):
+def confirm_token(token, expiration=604800):
     serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
     try:
         return serializer.loads(

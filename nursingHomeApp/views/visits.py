@@ -84,11 +84,11 @@ def format_patient_info(patients, forClinician=False):
         if not lv:
             lvDesc = 'None'
         elif lvByDr == lv:
-            lvDesc = lv.strftime('%Y-%m-%d, Physician')
+            lvDesc = lv.strftime('%m/%d/%Y, Physician')
         else:
-            lvDesc = lv.strftime('%Y-%m-%d, APRN')
+            lvDesc = lv.strftime('%m/%d/%Y, APRN')
         nv, nvByDr = get_next_visit_dates(status, lv, lvByDr, admit, mcaid)
-        nvDesc, nvByDrDesc = (dt.strftime('%A, %b %d') for dt in (nv, nvByDr))
+        nvDesc, nvByDrDesc = (dt.strftime('%m/%d/%Y') for dt in (nv, nvByDr))
         # number of days until due date
         nvDays = (nv - datetime.datetime.today().date()).days
         nvByDrDays = (nvByDr - datetime.datetime.today().date()).days
@@ -116,6 +116,7 @@ def get_next_visit_dates(status, lv, lvByDr, admit, mcaid):
 
 
 @app.route("/submit/upcoming", methods=['POST'])
+@login_required('upcoming_for_clerk_submit')
 def upcoming_for_clerk_submit():
     errors, visits = {}, []
     for key in request.form:

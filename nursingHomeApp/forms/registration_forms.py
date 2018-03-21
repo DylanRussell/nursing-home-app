@@ -25,3 +25,14 @@ class LoginForm(FlaskForm):
     email = EmailField('email', validators=[DataRequired(), is_valid_email])
     pw = PasswordField('password', validators=[DataRequired(), is_valid_pw])
     submit = SubmitField('Login')
+
+
+class EmailForm(FlaskForm):
+    email = EmailField('email', validators=[DataRequired(), is_valid_email])
+    submit = SubmitField('Reset Password')
+
+
+class NewPasswordForm(FlaskForm):
+    pw1 = PasswordField('password', validators=[DataRequired()])
+    pw2 = PasswordField('confirm password', validators=[DataRequired(), is_same_pw])
+    submit = SubmitField('Create Password')

@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from nursingHomeApp import mysql
 from functools import wraps
 from flask_login import current_user
-from flask import flash, redirect, url_for
+from flask import flash, redirect, url_for, request, jsonify
 
 
 def login_required(fn):
@@ -11,6 +11,8 @@ def login_required(fn):
         def decorated_view(*args, **kwargs):
             if not current_user.is_authenticated:
                 flash('You must be logged in to view this page.', 'warning')
+                if request.is_xhr:
+                    return jsonify({'url': url_for('login')})
                 return redirect(url_for('login'))
             role = current_user.role
             cursor = mysql.connection.cursor()
@@ -18,6 +20,8 @@ def login_required(fn):
                     (select role_value FROM user_role WHERE role=%s) &
                     (select bit from permission where name=%s)""", (role, fn)):
                 flash('You are not authorized to view this page.', 'danger')
+                if request.is_xhr:
+                    return jsonify({'url': url_for('login')})
                 return redirect(url_for('login'))
             return f(*args, **kwargs)
         return decorated_view
