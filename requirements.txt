@@ -7,7 +7,7 @@ cement==2.8.2
 cffi==1.11.0
 click==6.7
 colorama==0.3.7
-cryptography==2.1.4
+cryptography==2.3
 decorator==4.1.2
 docker-py==1.7.2
 dockerpty==0.4.1
