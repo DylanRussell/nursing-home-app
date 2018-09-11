@@ -1,0 +1,51 @@
+{% extends "layouts/base_authenticated.html" %}
+{% block content %}
+  <div class="container">
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="alert alert-{{category}} page-alert">
+          <button data-dismiss="alert" type="button" class="close"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+          <strong> {{message}} </strong>
+      </div>
+    {% endfor %}
+      <table id="facilities" class="table table-striped table-bordered" cellspacing="0" width="100%">
+        <br><hr>
+        <thead> 
+            <tr>
+                <th>Facility Name</th>
+                <th>Address</th>
+                <th>City</th>
+                <th>State</th>
+                <th>Zipcode</th>
+                <th>Active</th>
+                <th>Number of Floors</th>
+                <th>Update Facility</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for id, name, address, city, state, zipcode, active, num_floors in facilities %}
+              <tr>
+                  <td>{{name}}</td>
+                  <td>{{address}}</td>
+                  <td>{{city}}</td>
+                  <td>{{state}}</td>
+                  <td>{{zipcode}}</td>
+                  <td>{{ 'Yes' if active else 'No' }}</td>
+                  <td>{{ num_floors }}</td>
+                  <td><a href="{{url_for('update_facility', id=id)}}">Update Facility</a></td>
+              </tr>
+            {% endfor %}
+        </tbody>
+      </table>
+{% block footer %}
+{{super()}}
+{% endblock %}
+</div> <!-- /container -->
+{% endblock %}
+{% block scripts %}
+{{super()}}
+<script type="text/javascript">
+  $(document).ready(function() {
+    var table = $('#facilities').DataTable({});
+  });
+</script>
+{% endblock %}

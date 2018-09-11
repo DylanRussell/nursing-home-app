@@ -1,0 +1,23 @@
+{% import 'bootstrap/wtf.html' as wtf %}
+{% extends "layouts/base_authenticated.html" %}
+{% block content %}
+  <div class="container">
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="alert alert-{{category}} page-alert">
+          <button data-dismiss="alert" type="button" class="close"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+          <strong> {{message}} </strong>
+      </div>
+    {% endfor %}
+    {{ wtf.quick_form(form, form_type='horizontal', horizontal_columns=('md', 4, 4), button_map={'submit': 'success'}) }}
+{% block footer %}
+{{super()}}
+{% endblock %}
+</div> <!-- /container -->
+{% endblock %}
+{% block scripts %}
+{{super()}}
+<script type="text/javascript">
+  // https://select2.github.io/examples.html
+  $("select").select2({});
+</script>
+{% endblock %}
