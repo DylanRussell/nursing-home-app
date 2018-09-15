@@ -8,4 +8,9 @@
 
 !.elasticbeanstalk/*.global.yml
 
-nursingHomeApp/config_safe.py
+# Config Files
+
+nursingHomeApp/config_prod.py
+nursingHomeApp/config_test.py
+
+.DS_STORE
