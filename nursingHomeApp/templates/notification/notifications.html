@@ -1,5 +1,5 @@
 {% import 'bootstrap/wtf.html' as wtf %}
-{% extends "base_authenticated.html" %}
+{% extends "layouts/base_authenticated.html" %}
 {% block content %}
   <div class="container">
     {% for category, message in get_flashed_messages(with_categories=true) %}

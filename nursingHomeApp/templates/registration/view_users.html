@@ -1,5 +1,5 @@
 {% import 'bootstrap/wtf.html' as wtf %}
-{% extends "base_authenticated.html" %}
+{% extends "layouts/base_authenticated.html" %}
 {% block content %}
   <div class="container">
     {% for category, message in get_flashed_messages(with_categories=true) %}
@@ -16,24 +16,42 @@
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Role</th>
-                {% if current_user.role != 'Clerk' %}
+                {% if current_user.role == 'Site Admin' %}
+                  <th>Facility Name(s)</th>
+                {% endif %}
+                <th>Resend Invitation Email</th>
+                <th>Invitation E-mail Sent On</th>
+                {% if canRemove.get(current_user.role) %}
                   <th>Remove or Add User</th>
                 {% endif %}
             </tr>
         </thead>
         <tbody>
-            {% for user in users %}
+            {% for first, last, email, phone, role, active, id, hasPw, lastSent in users %}
               <tr>
-                  <td>{{user[0]}}</td>
-                  <td>{{user[1]}}</td>
-                  <td>{{user[2]}}</td>
-                  <td>{{user[3]}}</td>
-                  <td>{{user[4]}}</td>
-                  {% if current_user.role in ['Admin', 'Clerk Manager'] %}
+                  <td>{{first}}</td>
+                  <td>{{last}}</td>
+                  <td>{{email}}</td>
+                  <td>{{phone}}</td>
+                  <td>{{role}}</td>
+                  {% if current_user.role == 'Site Admin' %}
+                    <th>{{facilities.get(id, 'None')}}</th>
+                  {% endif %}
+                  <td>
+                    {% if hasPw %}
+                      User already registered!
+                    {% elif not active %}
+                      User has been removed!
+                    {% else %}
+                      <a href="{{url_for('registration.send_invitation', userId=id)}}">Resend Invitation Email</a>
+                    {% endif %}
+                  </td>
+                  <td>{{lastSent}}</td>
+                  {% if canRemove.get(current_user.role) %}
                     <td>
-                      {% if (current_user.role == 'Clerk Manager' and user[4] == 'Clerk') or current_user.role == 'Admin' %}
-                        <a href="{{url_for('toggle_user', id=user[6])}}" class="btn btn-{% if user[5] %}danger{% else %}success{% endif %}">
-                        {% if user[5] %}Remove{% else %}Add{% endif %}
+                      {% if role in canRemove.get(current_user.role) %}
+                        <a href="{{url_for('registration.toggle_user', id=id)}}" class="btn btn-{% if active %}danger{% else %}success{% endif %}">
+                        {% if active %}Remove{% else %}Add{% endif %}
                         </a>
                       {% else %}
                         <p>N/A</p>

@@ -1,5 +1,5 @@
 {% import 'bootstrap/wtf.html' as wtf %}
-{% extends "base_authenticated.html" %}
+{% extends "layouts/base_authenticated.html" %}
 {% block content %}
   <div class="container">
     {% for category, message in get_flashed_messages(with_categories=true) %}
@@ -13,4 +13,22 @@
 {{super()}}
 {% endblock %}
 </div> <!-- /container -->
+{% endblock %}
+{% block scripts %}
+{{super()}}
+<script type="text/javascript">
+  $('#skilledVisits').prop('disabled', true)
+  $('#status').change(function(){
+  	if ($('#status').val() == '2') {
+  		$('#skilledVisits').prop('disabled', false)
+  	} else {
+  		$('#skilledVisits').prop('disabled', true)
+  	}
+  });
+  $('form').submit(function(e) {
+      $(':disabled').each(function(e) {
+          $(this).removeAttr('disabled');
+      })
+  });
+</script>
 {% endblock %}

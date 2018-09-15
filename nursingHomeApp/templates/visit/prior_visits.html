@@ -1,0 +1,114 @@
+{% extends "layouts/base_authenticated.html" %}
+{% block content %}
+  <div class="container">
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="alert alert-{{category}} page-alert">
+          <button data-dismiss="alert" type="button" class="close"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+          <strong> {{message}} </strong>
+      </div>
+    {% endfor %}
+      <div class="col-md-12">
+        <table id="upcoming" class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Patient Name</th>
+              <th>Doctor Name</th>
+              <th>Visit Date</th>
+              <th>Visit Done By Doctor</th>
+              <th>Note Received?</th>
+              <th>Orders Signed?</th>
+            </tr>
+          </thead>
+            {% for vId, pName, drName, vDate, byDr, note, order in visits %}
+              <tr>
+                <td>{{pName}}</td>
+                <td>{{drName}}</td>
+                <td>
+                  <input type="text" name="{{vId}}_visited_on" id="{{vId}}_visited_on" class="form-control datepicker" value="{{vDate}}">
+                </td>
+                <td>
+                  <input type="checkbox" name="{{vId}}_visited_by_md" id="{{vId}}_visited_by_md" class="form-control radio" {{'checked' if byDr}}>
+                </td>
+                <td>
+                  <input type="checkbox" name="{{vId}}_note_received" id="{{vId}}_note_received" class="form-control" {{'checked' if note}}>
+                </td>
+                <td>
+                  <input type="checkbox" name="{{vId}}_orders_signed" id="{{vId}}_orders_signed" class="form-control" {{'checked' if order}}>
+                </td>
+              </tr>
+            {% endfor %}
+          <tbody>
+          </tbody>
+        </table>
+        <button id="submitform" class="btn btn-success">Update Visit(s)</button>
+        <br><br>
+      </div>
+{% block footer %}
+{{super()}}
+{% endblock %}
+</div> <!-- /container -->
+{% endblock %}
+{% block scripts %}
+{{super()}}
+<script type="text/javascript">
+  $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+  $(".radio").bootstrapSwitch({
+    'onText': 'MD',
+    'offText': 'APRN'
+  });
+  $('.datepicker').datepicker({
+    'endDate': '0d'
+  })
+  var table = $('#upcoming').DataTable({
+      "aaSorting": [],
+      columnDefs: [
+      { orderDataType: 'dom-date', type: 'date', targets: [2] },
+      { type: 'last-name', targets: [0, 1] },
+      { orderDataType: 'dom-bool', type: 'boolean', targets: [3, 4, 5]}
+      ]
+      });
+  $.fn.dataTable.ext.order['dom-date'] = function  ( settings, col )
+    {
+        return this.api().column( col, {order:'index'} ).nodes().map( function ( td, i ) {
+            return $('input', td).val();
+        });
+    }
+  $.fn.dataTable.ext.order['dom-bool'] = function  ( settings, col )
+    {
+        return this.api().column( col, {order:'index'} ).nodes().map( function ( td, i ) {
+            return $('input', td).is(':checked');
+        });
+    }
+  jQuery.extend(jQuery.fn.dataTableExt.oSort, {
+    "last-name-pre": function (a) {
+      if (a == null || a == "") {
+        return 0;
+      }
+      var lastName = a.split(/\s+/)[1].toLowerCase();
+      return lastName
+    },
+    "last-name-asc": function (a, b) {
+      return ((a < b) ? -1 : ((a > b) ? 1 : 0));
+    },
+    "last-name-desc": function (a, b) {
+      return ((a < b) ? 1 : ((a > b) ? -1 : 0));
+    }
+  });
+  $('#submitform').click(function() {
+    var data = table.$('input').serialize();
+    $.ajax({url: $SCRIPT_ROOT + "/prior",
+            data: data,
+            method: 'POST',
+            success: function(result){
+              if (Object.keys(result).length != 0) {
+                for (var key in result){
+                  $("#" + key).parent().append("<p class='help-block' style='color:#a94442'>" + result[key] + "</p>");
+                }
+              } else {
+                location.reload();
+              }
+            }
+          });
+        });
+</script>
+{% endblock %}

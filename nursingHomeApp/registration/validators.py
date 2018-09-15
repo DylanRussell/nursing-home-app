@@ -7,16 +7,6 @@ SELECT_PW = "SELECT password FROM user WHERE email=%s"
 DOES_EMAIL_EXIST = "SELECT * FROM user WHERE email=%s"
 
 
-def is_valid_phone(form, field):
-    if form.phone.data:
-        try:
-            int(form.phone.data)
-        except ValueError:
-            raise ValidationError('Please only include digits in this field')
-        if len(form.phone.data) not in {10, 11}:
-            raise ValidationError('Phone number must be 10 or 11 digits long')
-
-
 def is_valid_email(form, field):
     cursor = mysql.connection.cursor()
     if not cursor.execute(IS_EMAIL_VALID, (form.email.data,)):

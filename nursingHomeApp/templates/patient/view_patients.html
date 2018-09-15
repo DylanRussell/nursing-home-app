@@ -1,4 +1,4 @@
-{% extends "base_authenticated.html" %}
+{% extends "layouts/base_authenticated.html" %}
 {% block content %}
   <div class="container">
     {% for category, message in get_flashed_messages(with_categories=true) %}
@@ -7,6 +7,7 @@
           <strong> {{message}} </strong>
       </div>
     {% endfor %}
+    {% if current_user.role in ['Clerk', 'Clerk Manager', 'Facility Admin'] %}
       <div class="col-md-4">
         <select id="floornum" class="form-control">
           <option value="">View Patients by Floor</option>
@@ -16,34 +17,39 @@
           {% endfor %}
         </select>
       </div>
+    {% endif %}
       <table id="patients" class="table table-striped table-bordered" cellspacing="0" width="100%">
         <br><hr>
         <thead>
             <tr>
                 <th>First</th>
                 <th>Last</th>
+                {% if current_user.role not in ['Clerk', 'Clerk Manager', 'Facility Admin'] %}
+                  <th>Facility Name</th>
+                {% endif %}
                 <th>Room #</th>
                 {% if current_user.role not in ['Physician', 'Nurse Practitioner'] %}
                   <th>Status</th>
                   <th>Physician</th>
-                <!-- <th>APRN</th> -->
-                  <th>Has Medicaid?</th>
+                  <th>Medicaid?</th>
                   <th>Update Patient</th>
                 {% endif %}
             </tr>
         </thead>
         <tbody>
-            {% for patient in patients %}
+            {% for first, last, room, status, mdName, npName, hasMedicaid, facility, pId in patients %}
               <tr>
-                  <td>{{patient[0]}}</td>
-                  <td>{{patient[1]}}</td>
-                  <td>{{patient[2]}}</td>
+                  <td>{{first}}</td>
+                  <td>{{last}}</td>
+                  {% if current_user.role not in ['Clerk', 'Clerk Manager', 'Facility Admin'] %}
+                    <td>{{facility}}</td>
+                  {% endif %}
+                  <td>{{room}}</td>
                   {% if current_user.role not in ['Physician', 'Nurse Practitioner'] %}
-                    <td>{{patient[3]}}</td>
-                    <td>{{patient[4]}}</td>
-                  <!-- <td>{{patient[5]}}</td> -->
-                    <td>{{ 'Yes' if patient[6] else 'No' }}</td>
-                    <td><a href="{{url_for('update_patient', id=patient[7])}}">Update Patient</a></td>
+                    <td>{{status}}</td>
+                    <td>{{mdName}}</td>
+                    <td>{{ 'Yes' if hasMedicaid else 'No' }}</td>
+                    <td><a href="{{url_for('patient.update_patient', id=pId)}}">Update Patient</a></td>
                   {% endif %}
               </tr>
             {% endfor %}
@@ -65,7 +71,27 @@
 {{super()}}
 <script type="text/javascript">
   $(document).ready(function() {
-    table = $('#patients').DataTable();
+    var table = $('#patients').DataTable({
+        "aaSorting": [],
+        columnDefs: [
+        { type: 'last-name', targets: [4] }
+        ]
+        });
+    jQuery.extend(jQuery.fn.dataTableExt.oSort, {
+      "last-name-pre": function (a) {
+        if (a == null || a == "") {
+          return 0;
+        }
+        var lastName = a.split(/\s+/)[1].toLowerCase();
+        return lastName
+      },
+      "last-name-asc": function (a, b) {
+        return ((a < b) ? -1 : ((a > b) ? 1 : 0));
+      },
+      "last-name-desc": function (a, b) {
+        return ((a < b) ? 1 : ((a > b) ? -1 : 0));
+      }
+    });
     table.column(2).search("{{'^' + current_user.floor if current_user.floor}}", true, false).draw();
     $("#floornum").change((function() {
       table.column(2).search($("#floornum option:selected").val(), true, false).draw();

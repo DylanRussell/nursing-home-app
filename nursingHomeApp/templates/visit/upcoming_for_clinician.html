@@ -1,4 +1,4 @@
-{% extends "base_authenticated.html" %}
+{% extends "layouts/base_authenticated.html" %}
 {% block content %}
   <div class="container">
     {% for category, message in get_flashed_messages(with_categories=true) %}
@@ -14,34 +14,32 @@
             <tr>
               <th>Name</th>
               <th>Room</th>
-              <th>Last Visit</th>
-              <th>Next Visit Due (Doctor or Nurse)</th>
-              <th># of Days</th>
-              <th>Next Required Doctor Visit</th>
-              <th># of Doc Days</th>
+              <th>Last Visit by APRN</th>
+              <th>Last Visit by Doctor</th>
+              <th>Next Visit Due (Doctor or APRN)</th>
+              <th>Next Required Doctor Visit Due</th>
             </tr>
           </thead>
-            {% for name, rm, lvDesc, nvDesc, nvDays, nvByDrDesc, nvByDrDays in patients %}
+            {% for name, rm, nvDays, nvByDrDays, nv, nvByDr, lvByN, lvByDr in patients %}
               <tr>
                 <td>{{name}}</td>
                 <td>{{rm}}</td>
-                <td>{{lvDesc}}</td>
+                <td>{{lvByN}}</td>
+                <td>{{lvByDr}}</td>
                 {% if nvDays <= 0 %}
-                  <td class="danger">{{nvDesc}}</td>
+                  <td class="danger">{{nv}}</td>
                 {% elif nvDays <= 21 %}
-                  <td class="warning">{{nvDesc}}</td>
+                  <td class="warning">{{nv}}</td>
                 {% else %}
-                  <td class="success">{{nvDesc}}</td>
+                  <td class="success">{{nv}}</td>
                 {% endif %}
-                <td>{{nvDays}}</td>
                 {% if nvByDrDays <= 0 %}
-                  <td class="danger">{{nvByDrDesc}}</td>
+                  <td class="danger">{{nvByDr}}</td>
                 {% elif nvByDrDays <= 21 %}
-                  <td class="warning">{{nvByDrDesc}}</td>
+                  <td class="warning">{{nvByDr}}</td>
                 {% else %}
-                  <td class="success">{{nvByDrDesc}}</td>
+                  <td class="success">{{nvByDr}}</td>
                 {% endif %}
-                <td>{{nvByDrDays}}</td>
               </tr>
             {% endfor %}
           <tbody>
@@ -59,20 +57,38 @@
   var table = $('#upcoming').DataTable({
       "aaSorting": [],
       columnDefs: [
-                    {
-                    targets: [ 3 ],
-                    orderData: [ 4 ]
-                    },
-                    {
-                    targets: [ 5 ],
-                    orderData: [ 6 ]
-                    },
-                    {
-                      targets: [ 4, 6 ],
-                      "visible": false,
-                      "searchable": false
-                    }
-                  ]
+      { type: 'date-uk', targets: [2, 3, 4, 5] },
+      { type: 'last-name', targets: [0] } //specify your date column number,starting from 0
+      ]
       });
+  jQuery.extend(jQuery.fn.dataTableExt.oSort, {
+    "date-uk-pre": function (a) {
+      if (a == null || a == "") {
+        return 0;
+      }
+    var ukDatea = a.split(' ')[0].split('/');
+      return (ukDatea[2] + ukDatea[0] + ukDatea[1]) * 1;
+    },
+    "date-uk-asc": function (a, b) {
+      return ((a < b) ? -1 : ((a > b) ? 1 : 0));
+    },
+    "date-uk-desc": function (a, b) {
+      return ((a < b) ? 1 : ((a > b) ? -1 : 0));
+    },
+
+    "last-name-pre": function (a) {
+      if (a == null || a == "") {
+        return 0;
+      }
+      var lastName = a.split(/\s+/)[1].toLowerCase();
+      return lastName
+    },
+    "last-name-asc": function (a, b) {
+      return ((a < b) ? -1 : ((a > b) ? 1 : 0));
+    },
+    "last-name-desc": function (a, b) {
+      return ((a < b) ? 1 : ((a > b) ? -1 : 0));
+    }
+  });
 </script>
 {% endblock %}

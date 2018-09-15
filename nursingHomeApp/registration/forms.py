@@ -1,9 +1,12 @@
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, SubmitField, TextField, SelectField
+from wtforms import PasswordField, SubmitField, TextField
+from wtforms_components import SelectField
 from wtforms.fields.html5 import EmailField, TelField
 from wtforms.validators import DataRequired
-from nursingHomeApp.forms.registration_validators import is_email_unique,\
-    is_same_pw, is_valid_pw, is_valid_email, is_valid_phone
+from nursingHomeApp.registration.validators import is_email_unique,\
+    is_same_pw, is_valid_pw, is_valid_email
+from nursingHomeApp.common_queries import get_facilities
+from nursingHomeApp.common_validators import is_valid_phone
 
 
 class AddUserForm(FlaskForm):
@@ -12,6 +15,7 @@ class AddUserForm(FlaskForm):
     email = EmailField('Email', validators=[DataRequired(), is_email_unique])
     phone = TelField('Phone number', validators=[is_valid_phone])
     role = SelectField('Role', validators=[DataRequired()])
+    facility = SelectField('Facility', choices=get_facilities, coerce=int)
     submit = SubmitField('Add')
 
 

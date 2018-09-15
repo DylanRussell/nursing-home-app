@@ -4,7 +4,7 @@ from flask import render_template, flash, redirect, url_for
 from nursingHomeApp.common import login_required, get_user_facility_id
 from nursingHomeApp.facility import bp
 from flask_login import current_user
-from nursingHomeApp.facility.form import AddFacilityForm, AddCliniciansForm
+from nursingHomeApp.facility.forms import AddFacilityForm, AddCliniciansForm
 
 
 INSERT_FACILITY = """INSERT INTO facility (name, address, city, state, zipcode,
@@ -30,7 +30,7 @@ def update_facility(id):
         update_facility_data(form)
         flash('Your Changes Have Been saved', 'success')
     set_facility_defaults(form)
-    return render_template('update_facility.html', form=form)
+    return render_template('facility/update_facility.html', form=form)
 
 
 def set_facility_defaults(form):
@@ -54,7 +54,7 @@ def update_facility_data(form):
 @bp.route('/view/facility', methods=['GET'])
 @login_required('view_facilities')
 def view_facilities():
-    return render_template('view_facilities.html', facilities=get_facilities())
+    return render_template('facility/view_facilities.html', facilities=get_facilities())
 
 
 def get_facilities():
@@ -70,8 +70,8 @@ def add_facility():
     if form.validate_on_submit():
         create_facility(form)
         flash('Successfully Added Facility', 'success')
-        return redirect(url_for('add_facility'))
-    return render_template('add_facility.html', form=form)
+        return redirect(url_for('facility.add_facility'))
+    return render_template('facility/add_facility.html', form=form)
 
 
 def create_facility(form):
@@ -91,8 +91,8 @@ def add_clinicians():
         add_clinicians_to_facility(form)
         args = (len(form.doctors.data), len(form.nurses.data))
         flash('Added %s doctors and %s nurses to your facility!' % args, 'success')
-        return redirect(url_for('add_clinicians'))
-    return render_template('add_clinicians.html', form=form)
+        return redirect(url_for('facility.add_clinicians'))
+    return render_template('facility/add_clinicians.html', form=form)
 
 
 def add_clinicians_to_facility(form):

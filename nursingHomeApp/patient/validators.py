@@ -1,15 +1,15 @@
 from wtforms.validators import ValidationError, StopValidation
-from nursingHomeApp.forms.queries import get_patient_visits, get_all_nps,\
+from nursingHomeApp.common_queries import get_patient_visits, get_all_nps,\
     get_all_mds
 from datetime import datetime
 import csv
 
 
-VALID_PATIENT_STATUS = {'skilled care', 'long term care', 'new admission'}
+VALID_PATIENT_STATUS = {'skilled care', 'long term care', 'new admission', 'assisted living'}
 
 # error messages
 VISITS_REQUIRED = """The last visit date and last doctor visit date
-are required when adding a patient in Long Term or Skilled Care."""
+are required when adding a patient in Long Term Care or Assisted Living."""
 INVALID_PATIENT_STATUS = """The Patient Status '%s' on row %s is invalid.
 Patient status must be one of: Skilled Care, Long Term Care, New Admission."""
 PATIENT_COUNT_REQUIRED = "Must be between 1 and 1000 patients in file."
@@ -21,13 +21,11 @@ Valid date format is: YYYY-mm-dd."""
 PHYSICIAN_NOT_FOUND = """Physician '%s' on row %s not found. Make sure just
 first and last name are listed, and that they have been added as a user."""
 NURSE_NOT_FOUND = """Nurse '%s' on row %s not found. Make sure just first and
-last name are listed, and that they have been added as a user."""
+last name are listed, and that they have been added as a us er."""
 LAST_VISIT_MISSING = """Please include the Last Visit Date.
 If it is the same as the Last Doctor Visit Date, put the same date."""
 INVALID_DR_VISIT = """Last Doctor Visit Must have come before or be equal to
 the Last Visit date."""
-ADMIT_DATE_REQUIRED = """If patient is a new admission,
-their admittance date is requred."""
 ADMIT_DATE_AFTER_LV = "Admittance date cannot be after last visit date."
 ADMIT_DATE_AFTER_PV = """Admittance date cannot be after last doctor visit
 date."""
@@ -42,7 +40,7 @@ def validate_status_allowed(form, field):
     for i, row in enumerate(reader, 2):
         first, last, room, status, md, np, lv, lvByDr, admit, medicaid = row
         status = ' '.join(x for x in status.split(' ') if x).lower()
-        if status in {'long term care', 'skilled care'} and (not lv or not lvByDr):
+        if status in {'long term care', 'skilled care', 'assisted living'} and (not lv or not lvByDr):
             form.upload.data.seek(0)
             raise ValidationError(VISITS_REQUIRED)
         elif status not in VALID_PATIENT_STATUS:
@@ -129,14 +127,13 @@ def gte_prior_visit(form, field):
 
 
 def check_if_required(form, field):
-    if form.status.data in {1, 2}:  # long term care is 1, skilled care is 2
+    # long term care is 1, assisted living is 4
+    if form.status.data in {1, 4}:
         if not form.lastVisit.data or not form.priorVisit.data:
             raise ValidationError(VISITS_REQUIRED)
 
 
 def admittance_date_validations(form, field):
-    if not form.admittance.data and form.status.data == 4:
-        raise ValidationError(ADMIT_DATE_REQUIRED)
     if form.admittance.data and form.lastVisit.data:
         if form.admittance.data > form.lastVisit.data:
             raise ValidationError(ADMIT_DATE_AFTER_LV)
@@ -146,7 +143,7 @@ def admittance_date_validations(form, field):
 
 
 def can_status_change(form, field):
-    if form.status.data in {1, 2}:
+    if form.status.data == 1:
         visits = get_patient_visits(form.patientId.data)
         if len(visits) < 2 or not any(v[0] for v in visits):
             raise ValidationError(VISIT_DATE_REQS)

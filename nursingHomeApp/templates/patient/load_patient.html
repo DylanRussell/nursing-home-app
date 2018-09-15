@@ -1,5 +1,5 @@
 {% import 'bootstrap/wtf.html' as wtf %}
-{% extends "base_authenticated.html" %}
+{% extends "layouts/base_authenticated.html" %}
 {% block content %}
   <div class="container">
     {% for category, message in get_flashed_messages(with_categories=true) %}
@@ -9,7 +9,7 @@
       </div>
     {% endfor %}
     <div class="col-md-offset-2 col-md-10">
-        <a href="{{url_for('load_patient_format')}}">View Example File Format</a>
+        <a href="{{url_for('patient.load_patient_format')}}">View Example File Format</a>
         <br><br>
     </div>
     {{ wtf.quick_form(form, form_type='horizontal', horizontal_columns=('md', 4, 4), button_map={'submit': 'success'}) }}

@@ -31,7 +31,7 @@
                   <td>{{zipcode}}</td>
                   <td>{{ 'Yes' if active else 'No' }}</td>
                   <td>{{ num_floors }}</td>
-                  <td><a href="{{url_for('update_facility', id=id)}}">Update Facility</a></td>
+                  <td><a href="{{url_for('facility.update_facility', id=id)}}">Update Facility</a></td>
               </tr>
             {% endfor %}
         </tbody>

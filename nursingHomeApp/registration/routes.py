@@ -1,63 +1,53 @@
 from __future__ import absolute_import
-from nursingHomeApp import app, mysql, lm, mail, bcrypt
-from flask import render_template, request, url_for, flash, redirect
-from nursingHomeApp.forms.registration_forms import LoginForm, AddUserForm,\
+from nursingHomeApp import mysql, lm, mail, bcrypt
+from flask import render_template, request, url_for, flash, redirect, current_app
+from nursingHomeApp.registration.forms import LoginForm, AddUserForm,\
     PasswordForm, NewPasswordForm, EmailForm
-from nursingHomeApp.views.common import login_required
-from nursingHomeApp.config_safe import role2role
+from nursingHomeApp.registration import bp
+from nursingHomeApp.common import login_required
+from nursingHomeApp.config_prod import canAdd, canRemove, canView
 from urlparse import urlparse, urljoin
 from flask_login import logout_user, login_user, current_user
 from itsdangerous import URLSafeTimedSerializer, BadSignature
 from flask_mail import Message
-from twilio.twiml.messaging_response import MessagingResponse
+import flask, datetime
 
 
-OPT_OUT = """UPDATE notification SET email_notification_on=0, notify_designee=0,
-phone_notification_on=0 WHERE user_id=%s"""
 AUTHENTICATE_A_USER = """UPDATE user SET password=%s, confirmed_on=NOW(),
-email_confirmed=1 WHERE email=%s"""
-INSERT_USER = """INSERT INTO user (role, first, last, email, phone, create_user)
-VALUES (%s, %s, %s, %s, %s, %s)"""
+email_confirmed=1, update_user=%s WHERE id=%s"""
+INSERT_USER = """INSERT INTO user (role, first, last, email, phone,
+create_user, active) VALUES (%s, %s, %s, %s, %s, %s, 1)"""
 INSERT_NOTIFICATION = """INSERT INTO notification (email, phone, user_id,
 create_user) VALUES (%s, %s, %s, %s)"""
 SELECT_USER = """SELECT id, role, first, last, email, floor, active,
 email_confirmed FROM USER WHERE (id=%s or email=%s)"""
+SELECT_USERS_FACILITY = """SELECT facility_id FROM user_to_facility WHERE
+user_id=%s"""
+INSERT_USER_TO_FACILITY_MAPPING = """INSERT INTO user_to_facility (user_id,
+facility_id, create_user, update_user) VALUES (%s, %s, %s, %s)"""
+TOGGLE_USER_STATE = """UPDATE user SET active=not active,
+update_user=%s, update_date=NOW() WHERE id=%s"""
+SELECT_ROLE = "SELECT role FROM user WHERE id=%s"
+SELECT_NEW_USER = """SELECT email, first, last, role FROM user WHERE id=%s
+AND password IS NULL AND active=1 AND
+DATE(invitation_last_sent) != CURDATE()"""
+CANT_RESEND_CONFIRMATION = """Invitation E-mail has already been sent out
+in the last 24 hours"""
+UPDATE_INVITATION_SENT = """UPDATE user SET invitation_last_sent=NOW(),
+update_user=%s, update_date=NOW() WHERE id=%s"""
+SELECT_USERS_FACILITIES = """SELECT u.user_id, f.name FROM user_to_facility u
+JOIN facility f ON f.id=u.facility_id"""
 
 
-@app.route("/sms", methods=['GET', 'POST'])
-def sms_reply():
-    """Respond to incoming calls with a simple text message."""
-    # Start our TwiML response
-    resp = MessagingResponse()
-
-    # Add a message
-    resp.message("Please visit www.visitMinder.com for more info.")
-
-    return str(resp)
-
-
-@app.route("/opt/out/<int:userId>")
-def opt_out_page(userId):
-    opt_out_user(userId)
-    flash('You have been opted out of all notifications.', 'success')
-    return redirect(url_for('login'))
-
-
-def opt_out_user(userId):
-    cursor = mysql.connection.cursor()
-    cursor.execute(OPT_OUT, (userId,))
-    mysql.connection.commit()
-
-
-@app.route("/logout")
+@bp.route("/logout")
 def logout():
     logout_user()
-    return redirect(url_for('login'))
+    return redirect(url_for('registration.login'))
 
 
-@app.errorhandler(500)
+@bp.errorhandler(500)
 def page_not_found(e):
-    return render_template('500.html'), 500
+    return render_template('registration/500.html'), 500
 
 
 @lm.user_loader
@@ -65,42 +55,43 @@ def load_user(id):
     return User(id=id)
 
 
-@app.route('/reset/<token>', methods=["GET", "POST"])
+@bp.route('/reset/<token>', methods=["GET", "POST"])
 def reset_password(token):
     email = confirm_token(token)
     if not email:
         flash('The reset password link is invalid or has expired.', 'danger')
-        return redirect(url_for('forgot_pword'))
+        return redirect(url_for('registration.forgot_pword'))
     form = NewPasswordForm()
     user = User(email=email)
     if form.validate_on_submit():
-        authenticate_user(email, form.pw1.data)
+        authenticate_user(email, form.pw1.data, user.id)
         if user.active:
             login_user(user)
             flash('Your password has been reset!', 'success')
             if current_user.role in {'Nurse Practitioner', 'Physician'}:
-                return redirect(url_for('upcoming_for_clinician'))
-            return redirect(url_for('upcoming_for_clerk'))
+                return redirect(url_for('visit.upcoming_for_clinician'))
+            return redirect(url_for('visit.upcoming_for_clerk'))
         flash('The account associated with this email has been deactivated.', 'danger')
-        return redirect(url_for('login'))
-    return render_template('new_password.html', form=form)
+        return redirect(url_for('registration.login'))
+    return render_template('registration/new_password.html', form=form)
 
 
-@app.route('/forgot', methods=['GET', 'POST'])
+@bp.route('/forgot', methods=['GET', 'POST'])
 def forgot_pword():
     form = EmailForm()
     if form.validate_on_submit():
         msg = Message("Reset Your Password", recipients=[form.email.data])
         token = generate_confirmation_token(form.email.data)
-        reset_url = url_for('reset_password', token=token, _external=True)
-        msg.html = render_template('reset_pw_email.html', url=reset_url)
+        reset_url = url_for('registration.reset_password', token=token, _external=True)
+        msg.html = render_template('registration/reset_pw_email.html', url=reset_url)
         mail.send(msg)
         flash('An e-mail has been sent with a link for you to reset your password.', 'success')
-    return render_template('reset_password.html', form=form)
+    return render_template('registration/reset_password.html', form=form)
 
 
-@app.route('/', methods=['GET', 'POST'])
+@bp.route('/', methods=['GET', 'POST'])
 def login():
+    # password validation done in LoginForm
     form = LoginForm()
     if form.validate_on_submit():
         user = User(email=form.email.data)
@@ -111,41 +102,42 @@ def login():
             if next and is_safe_url(next):
                 return redirect(next)
             if current_user.role in {'Nurse Practitioner', 'Physician'}:
-                return redirect(url_for('upcoming_for_clinician'))
+                return redirect(url_for('visit.upcoming_for_clinician'))
+            elif current_user.role == 'Site Admin':
+                return redirect(url_for('facility.view_facilities'))
             else:
-                return redirect(url_for('upcoming_for_clerk'))
+                return redirect(url_for('visit.upcoming_for_clerk'))
         flash('The account linked to this email has been deactivated.', 'danger')
-    return render_template('login.html', form=form)
+    return render_template('registration/login.html', form=form)
 
 
-@app.route('/add/user', methods=['GET', 'POST'])
+@bp.route('/add/user', methods=['GET', 'POST'])
 @login_required('add_user')
 def add_user():
     form = AddUserForm()
-    form.role.choices = [(x, x) for x in role2role[current_user.role]]
+    form.role.choices = [(x, x) for x in canAdd[current_user.role]]
     if form.validate_on_submit():
         userId = create_user(form)
-        create_notification(form, userId)
         msg = Message("Sign Up For visitMinder", recipients=[form.email.data])
         token = generate_confirmation_token(form.email.data)
-        invitation_url = url_for('confirm_email', token=token, _external=True)
-        opt_out_url = url_for('opt_out_page', userId=userId, _external=True)
-        msg.html = render_template('invitation.html', url=invitation_url,
+        invitation_url = url_for('registration.confirm_email', token=token, _external=True)
+        opt_out_url = url_for('notification.opt_out_page', userId=userId, _external=True)
+        msg.html = render_template('registration/invitation.html', url=invitation_url,
                                    first=form.first.data, last=form.last.data,
                                    role=form.role.data,
                                    opt_out_url=opt_out_url)
         mail.send(msg)
         flash('User successfully added!', 'success')
-        return redirect(url_for('add_user'))
-    return render_template('add_user.html', form=form)
+        return redirect(url_for('registration.add_user'))
+    return render_template('registration/add_user.html', form=form)
 
 
-@app.route('/confirm/<token>', methods=["GET", "POST"])
+@bp.route('/confirm/<token>', methods=["GET", "POST"])
 def confirm_email(token):
     email = confirm_token(token)
     if not email:
         flash('The confirmation link is invalid or has expired.', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('registration.login'))
     form = PasswordForm()
     user = User(email=email)
     if user.role == 'Physician':
@@ -153,25 +145,25 @@ def confirm_email(token):
     else:
         name = user.first + ' ' + user.last
     if form.validate_on_submit():
-        authenticate_user(email, form.pw1.data)
+        authenticate_user(email, form.pw1.data, user.id)
         if user.active:
             login_user(user)
             flash('Sign up complete!', 'success')
             if current_user.role in {'Nurse Practitioner', 'Physician'}:
-                return redirect(url_for('upcoming_for_clinician'))
-            return redirect(url_for('upcoming_for_clerk'))
+                return redirect(url_for('visit.upcoming_for_clinician'))
+            return redirect(url_for('visit.upcoming_for_clerk'))
         flash('The account associated with this email has been deactivated.', 'danger')
-        return redirect(url_for('login'))
-    return render_template('add_password.html', form=form, name=name)
+        return redirect(url_for('registration.login'))
+    return render_template('registration/add_password.html', form=form, name=name)
 
 
 def generate_confirmation_token(email):
-    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
     return serializer.dumps(email, salt='invitation')
 
 
 def confirm_token(token, expiration=604800):
-    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
     try:
         return serializer.loads(
             token,
@@ -182,10 +174,10 @@ def confirm_token(token, expiration=604800):
         return False
 
 
-def authenticate_user(email, password):
+def authenticate_user(email, password, userId):
     cursor = mysql.connection.cursor()
     cursor.execute(AUTHENTICATE_A_USER,
-                   (bcrypt.generate_password_hash(password), email))
+                   (bcrypt.generate_password_hash(password), userId, userId))
     mysql.connection.commit()
 
 
@@ -194,16 +186,114 @@ def create_user(form):
     args = (form.role.data, form.first.data.title(), form.last.data.title(),
             form.email.data, form.phone.data, current_user.id)
     cursor.execute(INSERT_USER, args)
+    userId = cursor.lastrowid
+    #if the user being added is a Site Admin, they do not belong to facility
+    #otherwise the new user belongs to the facility that the user adding them
+    #belongs to. if the user adding them is a Site Admin, the Site Admin is
+    #asked in the add user form to select a facility for the new user
+    if form.role.data != 'Site Admin':
+        if current_user.role != 'Site Admin':
+            cursor.execute(SELECT_USERS_FACILITY, (current_user.id,))
+            facilityId = cursor.fetchall()[0][0]
+        else:
+            facilityId = form.facility.data
+        args = (userId, facilityId, current_user.id, current_user.id)
+        cursor.execute(INSERT_USER_TO_FACILITY_MAPPING, args)
+        #a user receives notifications only if they are a physician / NP
+        if form.role.data in {'Nurse Practitioner', 'Physician'}:
+            args = (form.email.data, form.phone.data, userId, current_user.id)
+            cursor.execute(INSERT_NOTIFICATION, args)
     mysql.connection.commit()
-    return cursor.lastrowid
+    return userId
 
 
-def create_notification(form, userId):
-    if form.role.data in {'Nurse Practitioner', 'Physician'}:
-        cursor = mysql.connection.cursor()
-        cursor.execute(INSERT_NOTIFICATION, (form.email.data, form.phone.data,
-                       userId, current_user.id))
+@bp.before_app_request
+def before_request():
+    flask.session.permanent = True
+    current_app.permanent_session_lifetime = datetime.timedelta(minutes=20)
+    flask.session.modified = True
+    flask.g.user = current_user
+
+
+@bp.route('/send/invitation/<userId>', methods=['GET'])
+@login_required('send_invitation')
+def send_invitation(userId):
+    cursor = mysql.connection.cursor()
+    if cursor.execute(SELECT_NEW_USER, (userId,)):
+        email, first, last, role = cursor.fetchall()[0]
+        msg = Message("Sign Up For visitMinder", recipients=[email])
+        token = generate_confirmation_token(email)
+        invitation_url = url_for('registration.confirm_email', token=token, _external=True)
+        opt_out_url = url_for('notification.opt_out_page', userId=userId, _external=True)
+        msg.html = render_template('registration/invitation.html', url=invitation_url,
+                                   first=first, last=last, role=role,
+                                   opt_out_url=opt_out_url)
+        mail.send(msg)
+        flash('Invitation e-mail has been resent!', 'success')
+        cursor.execute(UPDATE_INVITATION_SENT, (current_user.id, userId))
         mysql.connection.commit()
+    else:
+        flash(CANT_RESEND_CONFIRMATION, 'danger')
+    return redirect(url_for('registration.view_users'))
+
+
+@bp.route("/view/users")
+@login_required('view_users')
+def view_users():
+    return render_template('registration/view_users.html', users=get_users(), canRemove=canRemove, facilities=get_user_facilities())
+
+
+def get_user_facilities():
+    # map of user id to comma separated string of facility names
+    facilities = {}
+    cursor = mysql.connection.cursor()
+    cursor.execute(SELECT_USERS_FACILITIES)
+    for userId, facility in cursor.fetchall():
+        if userId in facilities:
+            facilities[userId] += ', %s' % facility
+        else:
+            facilities[userId] = facility
+    return facilities
+
+
+def get_users():
+    q = """SELECT first, last, email, phone, role, active, id,
+    password IS NOT NULL, invitation_last_sent
+    FROM user WHERE role in ('%s')""" % "','".join(canView[current_user.role])
+    if current_user.role != 'Site Admin':
+        q += """ AND id IN (SELECT user_id FROM user_to_facility
+            WHERE facility_id IN (SELECT facility_id FROM user_to_facility
+            WHERE user_id=%s))""" % current_user.id
+    cursor = mysql.connection.cursor()
+    cursor.execute(q)
+    return cursor.fetchall()
+
+
+@bp.route("/toggle/<id>")
+@login_required('toggle_user')
+def toggle_user(id):
+    cur = current_user.role
+    userRole = get_user_role(id)
+    if str(current_user.id) == str(id):
+        flash('Cannot change your own status.', 'danger')
+    elif userRole in canRemove[cur]:
+        toggle_active_state(id)
+        flash('Users status has been updated.', 'success')
+    else:
+        flash('You do not have access to this operation.', 'danger')
+    return redirect(url_for('registration.view_users'))
+
+
+def toggle_active_state(userId):
+    cursor = mysql.connection.cursor()
+    cursor.execute(TOGGLE_USER_STATE, (current_user.id, userId))
+    mysql.connection.commit()
+
+
+def get_user_role(id):
+    cursor = mysql.connection.cursor()
+    cursor.execute(SELECT_ROLE, (id,))
+    return cursor.fetchone()[0]
 
 
 def is_safe_url(target):
@@ -226,7 +316,7 @@ class User():
 
     @property
     def is_active(self):
-        return True
+        return self.active
 
     @property
     def is_anonymous(self):

@@ -1,4 +1,4 @@
-{% extends "base_authenticated.html" %}
+{% extends "layouts/base_authenticated.html" %}
 {% block content %}
   <div class="container">
     {% for category, message in get_flashed_messages(with_categories=true) %}
@@ -32,43 +32,43 @@
             <tr>
               <th>Name</th>
               <th>Room</th>
-              <!-- <th>APRN</th> -->
-              <th>Physician</th>
-              <th>Last Visit</th>
-              <th>Next Visit Due (Doctor or Nurse)</th>
-              <th># of Days</th>
+              <th>Next Required Visit (Doctor or APRN)</th>
               <th>Next Required Doctor Visit</th>
-              <th># of Days Before Doc Visit</th>
+              <!-- <th>APRN</th> -->
+              <th>Doctor</th>
+              <th>Last Visit by APRN</th>
+              <th>Last Visit by Doctor</th>
               <th>Visited?</th>
               <th>Visited By?</th>
               <th>Visited On?</th>
+              <th>Note Received?</th>
+              <th>Orders Signed?</th>
             </tr>
           </thead>
-            {% for pId, name, status, rm, np, md, lvDesc, nvDesc, nvDays, nvByDrDesc, nvByDrDays in patients %}
+            {% for pId, name, status, rm, np, md, nvDays, nvByDrDays, nv, nvByDr, lvByN, lvByDr in patients %}
               <tr>
                 <td>{{name}} ({{status}})</td>
                 <td>{{rm}}</td>
+                {% if nvDays <= 0 %}
+                  <td class="danger">{{nv}}</td>
+                {% elif nvDays <= 21 %}
+                  <td class="warning">{{nv}}</td>
+                {% else %}
+                  <td class="success">{{nv}}</td>
+                {% endif %}
+                {% if nvByDrDays <= 0 %}
+                  <td class="danger">{{nvByDr}}</td>
+                {% elif nvByDrDays <= 21 %}
+                  <td class="warning">{{nvByDr}}</td>
+                {% else %}
+                  <td class="success">{{nvByDr}}</td>
+                {% endif %}
                 <!-- <td>{{np}}</td> -->
                 <td>{{md}}</td>
-                <td>{{lvDesc}}</td>
-                {% if nvDays <= 0 %}
-                  <td class="danger">{{nvDesc}}</td>
-                {% elif nvDays <= 21 %}
-                  <td class="warning">{{nvDesc}}</td>
-                {% else %}
-                  <td class="success">{{nvDesc}}</td>
-                {% endif %}
-                <td>{{nvDays}}</td>
-                {% if nvByDrDays <= 0 %}
-                  <td class="danger">{{nvByDrDesc}}</td>
-                {% elif nvByDrDays <= 21 %}
-                  <td class="warning">{{nvByDrDesc}}</td>
-                {% else %}
-                  <td class="success">{{nvByDrDesc}}</td>
-                {% endif %}
-                <td>{{nvByDrDays}}</td>
+                <td>{{lvByN}}</td>
+                <td>{{lvByDr}}</td>
                 <td>
-                  <input type="hidden" name="{{pId}}_status" value="{{pStatus}}">
+                  <input type="hidden" name="{{pId}}_status" value="{{status}}">
                   <input type="checkbox" name="{{pId}}_visited" id="{{pId}}_visited" class="form-control">
                 </td>
                 <td>
@@ -77,12 +77,25 @@
                 <td>
                   <input type="text" name="{{pId}}_visited_on" id="{{pId}}_visited_on" class="form-control datepicker" value="{{today}}">
                 </td>
+                <td>
+                  <input type="checkbox" name="{{pId}}_note_received" id="{{pId}}_note_received" class="form-control">
+                </td>
+                <td>
+                  <input type="checkbox" name="{{pId}}_orders_signed" id="{{pId}}_orders_signed" class="form-control">
+                </td>
               </tr>
             {% endfor %}
           <tbody>
           </tbody>
         </table>
-        <button id="submitform" class="btn btn-success">Add Visits</button>
+        <div class="col-md-2">
+          <button id="submitform" class="btn btn-success">Record Visit(s)</button>
+        </div>
+        <div class="col-md-2">
+          <form action="" method="post" class="form-inline">
+            <button name="dl" value="vis" class="btn btn-primary">Download Report</button>
+          </form>
+        </div>
         <br><br>
       </div>
 {% block footer %}
@@ -94,6 +107,7 @@
 {{super()}}
 <script type="text/javascript">
   $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+  var curFloor = {{curFloor|tojson|safe}};
   $(".radio").bootstrapSwitch({
     'onText': 'MD',
     'offText': 'APRN'
@@ -104,30 +118,45 @@
   var table = $('#upcoming').DataTable({
       "aaSorting": [],
       columnDefs: [
-                {
-                  targets: [ 4 ],
-                  orderData: [ 5 ]
-                },
-                {
-                  targets: [ 6 ],
-                  orderData: [ 7 ]
-                },
-                {
-                  targets: [ 5, 7 ],
-                  "visible": false,
-                  "searchable": false
-                }
-                ]
+      { type: 'date-uk', targets: [2, 3, 5, 6] }, //specify your date column number,starting from 0
+      { type: 'last-name', targets: [0, 4] }
+      ]
       });
+  jQuery.extend(jQuery.fn.dataTableExt.oSort, {
+    "date-uk-pre": function (a) {
+      if (a == null || a == "") {
+        return 0;
+      }
+    var ukDatea = a.split(' ')[0].split('/');
+      return (ukDatea[2] + ukDatea[0] + ukDatea[1]) * 1;
+    },
+    "date-uk-asc": function (a, b) {
+      return ((a < b) ? -1 : ((a > b) ? 1 : 0));
+    },
+    "date-uk-desc": function (a, b) {
+      return ((a < b) ? 1 : ((a > b) ? -1 : 0));
+    },
+
+    "last-name-pre": function (a) {
+      if (a == null || a == "") {
+        return 0;
+      }
+      var lastName = a.split(/\s+/)[1].toLowerCase();
+      return lastName
+    },
+    "last-name-asc": function (a, b) {
+      return ((a < b) ? -1 : ((a > b) ? 1 : 0));
+    },
+    "last-name-desc": function (a, b) {
+      return ((a < b) ? 1 : ((a > b) ? -1 : 0));
+    }
+  });
   $('#submitform').click(function() {
     var data = table.$('input').serialize();
     $.ajax({url: $SCRIPT_ROOT + "/submit/upcoming",
             data: data,
             method: 'POST',
             success: function(result){
-              if ('url' in result) {
-                window.location = result['url']
-              }
               if (Object.keys(result).length != 0) {
                 for (var key in result){
                   $("#" + key).parent().append("<p class='help-block' style='color:#a94442'>" + result[key] + "</p>");
@@ -141,6 +170,10 @@
   $("#floornum").change((function() {
     table.column(1).search($("#floornum option:selected").val(), true, false).draw();
   }));
+  if (curFloor) {
+    $("#floornum option:selected") = curFloor;
+    table.column(1).search($("#floornum option:selected").val(), true, false).draw();
+  }
   $("#clinicians").change((function() {
     table.search($("#clinicians option:selected").val()).draw();
   }));

@@ -1,11 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import SubmitField, IntegerField, BooleanField
 from wtforms.fields.html5 import EmailField, TelField
-from nursingHomeApp.forms.registration_validators import is_valid_phone
-
-
-def STR_2_NONE(x):
-    return x or None
+from nursingHomeApp.common_validators import STR_2_NONE, is_valid_phone
 
 
 class NotificationForm(FlaskForm):

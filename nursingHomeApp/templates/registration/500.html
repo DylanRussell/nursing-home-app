@@ -1,5 +1,5 @@
 {% import 'bootstrap/wtf.html' as wtf %}
-{% extends "base.html" %}
+{% extends "layouts/base.html" %}
 {% block head %}
 {{super()}}
 <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='jumbotron-narrow.css')}}">
@@ -9,7 +9,7 @@
   <div class="header clearfix">
     <nav>
       <ul class="nav nav-pills pull-right">
-        <li role="presentation" {% if request.endpoint == 'login' %} class="active" {% endif %}><a href="{{url_for('login')}}">Sign In</a></li>
+        <li role="presentation" {% if request.endpoint == 'login' %} class="active" {% endif %}><a href="{{url_for('registration.login')}}">Sign In</a></li>
       </ul>
     </nav>
     <h3 class="text-muted">visitMinder</h3>

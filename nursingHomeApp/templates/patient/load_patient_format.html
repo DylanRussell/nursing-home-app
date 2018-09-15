@@ -1,5 +1,5 @@
 {% import 'bootstrap/wtf.html' as wtf %}
-{% extends "base_authenticated.html" %}
+{% extends "lasyouts/base_authenticated.html" %}
 {% block content %}
   <div class="container">
     {% for category, message in get_flashed_messages(with_categories=true) %}
@@ -26,7 +26,7 @@
             <li class="list-group-item">Each row of data must have the following fields, in this order (leave optional fields blank if not applicable):<br><br>
               Patient's First Name (Required), Patient's Last Name (Required), Room Number (Required), Patient's Status (Required), Patient's Doctor (Required), Patient's Nurse (Optional), Last Visit Date (Optional), Last Visit by Doctor Date (Optional), Admittance Date (Only required if patient is new admission), Has Medicaid (Optional)
             </li>
-            <li class="list-group-item">Patient's Status Must be one of the Following: Long Term Care, Skilled Care, New Admission
+            <li class="list-group-item">Patient's Status Must be one of the Following: Long Term Care, Skilled Care, New Admission, Assisted Living
             </li>
             <li class="list-group-item">Dates must be in the format: YYYY-mm-dd. Ex: 2017-10-20</li>
             <li class="list-group-item">Any Doctor or Nurse named in the file must have been added as a user for visitMinder.</li>
