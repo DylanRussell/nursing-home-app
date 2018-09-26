@@ -11,14 +11,17 @@ MAIL_USERNAME = 'YOUR_MAIL_USERNAME'
 MAIL_PASSWORD = 'YOUR_MAIL_PW'
 MAIL_DEFAULT_SENDER = 'YOUR_MAIL_USERNAME'
 MAIL_UTILS_ERROR_SEND_TO = ADMINS = ['YOUR_ERR_EMAIL']
+# map of user role, to list of user roles that role is allowed to add when adding a user
 canAdd = {'Clerk': ['Physician', 'Nurse Practitioner'],
              'Facility Admin': ['Facility Admin', 'Clerk Manager', 'Clerk', 'Physician', 'Nurse Practitioner'],
              'Clerk Manager': ['Clerk', 'Physician', 'Nurse Practitioner'],
              'Site Admin': ['Facility Admin', 'Clerk Manager', 'Clerk', 'Physician', 'Nurse Practitioner', 'Site Admin']}
+# map of user role, to list of user roles that role is allowed to delete (set inactive) when removing a user
 canRemove = {'Clerk': [],
              'Facility Admin': ['Facility Admin', 'Clerk Manager', 'Clerk', 'Physician', 'Nurse Practitioner'],
              'Clerk Manager': ['Clerk'],
              'Site Admin': ['Facility Admin', 'Clerk Manager', 'Clerk', 'Physician', 'Nurse Practitioner', 'Site Admin']}
+# map of user role, to list of user roles that role is allowed to view on the 'view_users' page
 canView = {'Clerk': ['Nurse Practitioner', 'Physician'],
            'Facility Admin': ['Facility Admin', 'Clerk Manager', 'Clerk', 'Physician', 'Nurse Practitioner'],
            'Clerk Manager': ['Clerk', 'Physician', 'Nurse Practitioner'],
