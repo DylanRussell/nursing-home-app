@@ -97,7 +97,7 @@ def login():
         user = User(email=form.email.data)
         if user.active:
             login_user(user)
-            flash('Logged in successfully!', 'success')
+            flash('You Have Been Logged In!', 'success')
             next = request.args.get('next')
             if next and is_safe_url(next):
                 return redirect(next)
@@ -275,12 +275,12 @@ def toggle_user(id):
     cur = current_user.role
     userRole = get_user_role(id)
     if str(current_user.id) == str(id):
-        flash('Cannot change your own status.', 'danger')
+        flash('Cannot add or remove yourself.', 'danger')
     elif userRole in canRemove[cur]:
         toggle_active_state(id)
         flash('Users status has been updated.', 'success')
     else:
-        flash('You do not have access to this operation.', 'danger')
+        flash('You are not allowed to add or remove this type of user.', 'danger')
     return redirect(url_for('registration.view_users'))
 
 
