@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 from __future__ import absolute_import
 import sys
-from nursingHomeApp import bcrypt, mysql
-from flask import current_app
+sys.path.append(".")
+from nursingHomeApp import bcrypt, mysql, create_app
 
 
 def main():
     """Main entry point for script."""
-    with current_app.app_context():
+    app = create_app()
+    with app.app_context():
         cursor = mysql.connection.cursor()
 
         print 'Enter email address: ',
