@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+</head>
+<body>
+  <p>Hello {{first}} {{last}},</p>
+  <p>Below are your patients' upcoming visit dates.</p><br>
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Facility Name</th>
+        <th>Room</th>
+        <th>Last Visit</th>
+        <th>Next Required Visit (Doctor or Nurse)</th>
+        <th>Next Required Doctor Visit</th>
+      </tr>
+    </thead>
+      {% for name, facility, rm, lvDesc, nvDesc, nvByDrDesc, nvDays, nvByDrDays in patients %}
+        <tr>
+          <td>{{name}}</td>
+          <td>{{facility}}</td>
+          <td>{{rm}}</td>
+          <td>{{lvDesc}}</td>
+          <td>{{nvDesc}}</td>
+          <td>{{nvByDrDesc}}</td>
+        </tr>
+      {% endfor %}
+    <tbody>
+    </tbody>
+  </table>
+  <p>For more information regarding upcoming visits, login to your account on <a href="{{homepage}}">visitMinder</a>.</p><br>
+   <p>Follow this link if you would like all notifications turned off:</p>
+    <p><a href="{{ opt_out_url }}">{{ opt_out_url }}</a></p><br>
+    <p>Questions or Feedback?<br> Contact visitminder@gmail.com</p>
+</body>
+</html>
