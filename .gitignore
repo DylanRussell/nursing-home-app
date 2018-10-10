@@ -17,3 +17,10 @@ nursingHomeApp/config_prod.py
 nursingHomeApp/config_test.py
 
 .DS_STORE
+
+# no pyc files, zip files, sublime config files
+
+*.pyc
+*.zip
+*.cfg
+logs/
