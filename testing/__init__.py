@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import sys, unittest
 sys.path.append(".")
 from nursingHomeApp import create_app
-from nursingHomeApp.db import init_db
+from nursingHomeApp.db import recreate_db, setup_general, add_fake_data
 
 
 class BaseTestCase(unittest.TestCase):
@@ -11,7 +11,9 @@ class BaseTestCase(unittest.TestCase):
         self.app = create_app('nursingHomeApp.config_test')
         self.client = self.app.test_client()
         with self.app.app_context():
-            init_db()
+            recreate_db()
+            setup_general()
+            add_fake_data()
 
     def login_user(self, user='test@clerk.com', pw='abc123'):
         """Login a user. This is in the BaseTestCase class b/c it will

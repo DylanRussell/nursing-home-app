@@ -26,12 +26,4 @@ INSERT INTO `user_role` VALUES ('Site Admin', 262111);
 INSERT INTO `patient_status` VALUES (1, 'Long Term Care');
 INSERT INTO `patient_status` VALUES (2, 'Skilled Care / New Admission');
 INSERT INTO `patient_status` VALUES (3, 'Discharged');
-INSERT INTO `patient_status` VALUES (4, 'Assisted Living');
-INSERT INTO `facility`(`name`, `address`, `city`, `state`, `zipcode`, `phone_number`, `active`, `num_floors`, `create_user`) VALUES ('Test Facility', '123 Fake St', 'FakeCity', 'MA', '00000', '8888888888', 1, 4, 0);
-INSERT INTO `user` (`role`, `first`, `last`, `email`, `phone`, `floor`, `password`, `email_confirmed`, `confirmed_on`, `create_user`, `active`, `invitation_last_sent`) VALUES ('Clerk', 'Test', 'Test', 'test@clerk.com', NULL, '', '$2b$12$SS6AzOKfWfIqe3UuuSUCEOBe2FxgcHxUUBRIvzGovEzM9FfV4Lc6a', 1, NOW(), 0, 1, NOW());
-INSERT INTO `user_to_facility`(`user_id`, `facility_id`, `create_user`) VALUES (1, 1, 1);
-INSERT INTO `user` (`role`, `first`, `last`, `email`, `phone`, `floor`, `password`, `email_confirmed`, `confirmed_on`, `create_user`, `active`, `invitation_last_sent`) VALUES ('Facility Admin', 'Test', 'Test', 'test@facilityadmin.com', NULL, '', '$2b$12$SS6AzOKfWfIqe3UuuSUCEOBe2FxgcHxUUBRIvzGovEzM9FfV4Lc6a', 1, NOW(), 0, 1, NOW());
-INSERT INTO `user_to_facility`(`user_id`, `facility_id`, `create_user`) VALUES (2, 1, 1);
-INSERT INTO `user` (`role`, `first`, `last`, `email`, `phone`, `floor`, `password`, `email_confirmed`, `confirmed_on`, `create_user`, `active`, `invitation_last_sent`) VALUES ('Physician', 'Test', 'Test', 'test@physician.com', NULL, '', '$2b$12$SS6AzOKfWfIqe3UuuSUCEOBe2FxgcHxUUBRIvzGovEzM9FfV4Lc6a', 1, NOW(), 0, 1, NOW());
-INSERT INTO `user_to_facility`(`user_id`, `facility_id`, `create_user`) VALUES (3, 1, 1);
-INSERT INTO `user` (`role`, `first`, `last`, `email`, `phone`, `floor`, `password`, `email_confirmed`, `confirmed_on`, `create_user`, `active`, `invitation_last_sent`) VALUES ('Site Admin', 'Test', 'Test', 'test@siteadmin.com', NULL, '', '$2b$12$SS6AzOKfWfIqe3UuuSUCEOBe2FxgcHxUUBRIvzGovEzM9FfV4Lc6a', 1, NOW(), 0, 1, NOW());
+INSERT INTO `patient_status` VALUES (4, 'Assisted Living')
