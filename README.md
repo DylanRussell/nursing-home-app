@@ -40,7 +40,7 @@ Modify the variables in the ```config_{prod/dev/test}_example.py``` to reflect y
 
 I am using the [app factory](http://flask.pocoo.org/docs/1.0/patterns/appfactories/) pattern, so the app uses whichever config file is supplied as an argument to the [create_app function](nursingHomeApp/__init__.py). 
 
-The [CLI manager](manager.py) used below, looks for a file nursingHomeApp/config_test.py when creating the database, adding fake data etc.
+The [CLI manager](manage.py) used below, looks for a file nursingHomeApp/config_test.py when creating the database, adding fake data etc.
 
 
 ##### Create the database & schema
