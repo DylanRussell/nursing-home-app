@@ -15,6 +15,7 @@ send_notifications.py
 
 nursingHomeApp/config_prod.py
 nursingHomeApp/config_test.py
+nursingHomeApp/config_dev.py
 
 .DS_STORE
 
@@ -24,3 +25,7 @@ nursingHomeApp/config_test.py
 *.zip
 *.cfg
 logs/
+
+# ignore venv
+
+venv/
