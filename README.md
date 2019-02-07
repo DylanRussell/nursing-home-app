@@ -24,8 +24,6 @@ $ pip install virtualenv
 $ virtualenv -p python2 env
 $ source env/bin/activate
 ```
-I developed/tested the app using python 2, but I think it should work fine with python 3.
-
 ##### Install the dependencies
 
 ```
