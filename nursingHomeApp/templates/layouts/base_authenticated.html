@@ -25,45 +25,45 @@
       <ul class="nav navbar-nav">
         {% if current_user.role not in ['Physician', 'Nurse Practitioner', 'Site Admin'] %}
           <!-- Patient Endpoints -->
-          <li class="dropdown {% if request.endpoint in ['add_patient', 'view_patients', 'update_patient'] %} active {% endif %}">
+          <li class="dropdown {% if request.endpoint in ['patient.add_patient', 'patient.view_patients', 'patient.update_patient'] %} active {% endif %}">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Patients <span class="caret"></span></a>
             <ul class="dropdown-menu">
-              <li class="{{'active' if request.endpoint == 'add_patient' }}"><a href="{{url_for('patient.add_patient')}}">Add Patient</a></li>
-              <li class="{{'active' if request.endpoint == 'view_patients' }}"><a href="{{url_for('patient.view_patients')}}">View Patients</a></li>
+              <li class="{{'active' if request.endpoint == 'patient.add_patient' }}"><a href="{{url_for('patient.add_patient')}}">Add Patient</a></li>
+              <li class="{{'active' if request.endpoint == 'patient.view_patients' }}"><a href="{{url_for('patient.view_patients')}}">View Patients</a></li>
             </ul>
           </li>
         {% else %}
-          <li class="{{'active' if request.endpoint == 'view_patients' }}"><a href="{{url_for('patient.view_patients')}}">View Patients</a></li>
+          <li class="{{'active' if request.endpoint == 'patient.view_patients' }}"><a href="{{url_for('patient.view_patients')}}">View Patients</a></li>
         {% endif %}
         {% if current_user.role not in ['Physician', 'Nurse Practitioner'] %}
           <!-- User Mgmt Endpoints -->
-          <li class="dropdown {% if request.endpoint in ['add_user', 'view_users', 'add_clinicians'] %} active {% endif %}">
+          <li class="dropdown {% if request.endpoint in ['registration.add_user', 'registration.view_users', 'facility.add_clinicians'] %} active {% endif %}">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">User Management <span class="caret"></span></a>
             <ul class="dropdown-menu">
-              <li class="{{'active' if request.endpoint == 'add_user' }}"><a href="{{url_for('registration.add_user')}}">Add User</a></li>
-                <li class="{{'active' if request.endpoint == 'view_users' }}"><a href="{{url_for('registration.view_users')}}">
+              <li class="{{'active' if request.endpoint == 'registration.add_user' }}"><a href="{{url_for('registration.add_user')}}">Add User</a></li>
+                <li class="{{'active' if request.endpoint == 'registration.view_users' }}"><a href="{{url_for('registration.view_users')}}">
                   {{'View Clinicians' if current_user.role == 'Clerk' else 'View Users'}}
                 </a></li>
                 {% if current_user.role != 'Site Admin' %}
-                  <li class="{{'active' if request.endpoint == 'add_clinicians' }}"><a href="{{url_for('facility.add_clinicians')}}">Find Existing Clinicians</a></li>
+                  <li class="{{'active' if request.endpoint == 'facility.add_clinicians' }}"><a href="{{url_for('facility.add_clinicians')}}">Find Existing Clinicians</a></li>
                 {% endif %}
             </ul>
           </li>
         {% endif %}
         {% if current_user.role != 'Site Admin' %}
             {% if current_user.role in ['Physician', 'Nurse Practitioner'] %}
-              <li class="{{'active' if request.endpoint == 'upcoming_for_clinician' }}"><a href="{{url_for('visit.upcoming_for_clinician')}}">Upcoming Visits</a></li>
-              <li class="{{'active' if request.endpoint == 'notifications' }}"><a href="{{url_for('notification.notifications')}}">My Notifications</a></li>
+              <li class="{{'active' if request.endpoint == 'visit.upcoming_for_clinician' }}"><a href="{{url_for('visit.upcoming_for_clinician')}}">Upcoming Visits</a></li>
+              <li class="{{'active' if request.endpoint == 'notification.notifications' }}"><a href="{{url_for('notification.notifications')}}">My Notifications</a></li>
             {% else %}
-              <li class="{{'active' if request.endpoint == 'upcoming_for_clerk' }}"><a href="{{url_for('visit.upcoming_for_clerk')}}">Upcoming Visits</a></li>
-              <li class="{{'active' if request.endpoint == 'prior_visits' }}"><a href="{{url_for('visit.prior_visits')}}">Past Visits</a></li>
+              <li class="{{'active' if request.endpoint == 'visit.upcoming_for_clerk' }}"><a href="{{url_for('visit.upcoming_for_clerk')}}">Upcoming Visits</a></li>
+              <li class="{{'active' if request.endpoint == 'visit.prior_visits' }}"><a href="{{url_for('visit.prior_visits')}}">Past Visits</a></li>
             {% endif %}
         {% else %}
-          <li class="dropdown {% if request.endpoint in ['add_facility', 'view_facilities', 'update_facility'] %} active {% endif %}">
+          <li class="dropdown {% if request.endpoint in ['facility.add_facility', 'facility.view_facilities', 'facility.update_facility'] %} active {% endif %}">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Facilities <span class="caret"></span></a>
             <ul class="dropdown-menu">
-              <li class="{{'active' if request.endpoint == 'add_facility' }}"><a href="{{url_for('facility.add_facility')}}">Add Facility</a></li>
-              <li class="{{'active' if request.endpoint == 'view_facilities' }}"><a href="{{url_for('facility.view_facilities')}}">View Facilities</a></li>
+              <li class="{{'active' if request.endpoint == 'facility.add_facility' }}"><a href="{{url_for('facility.add_facility')}}">Add Facility</a></li>
+              <li class="{{'active' if request.endpoint == 'facility.view_facilities' }}"><a href="{{url_for('facility.view_facilities')}}">View Facilities</a></li>
             </ul>
           </li>
         {% endif %}
