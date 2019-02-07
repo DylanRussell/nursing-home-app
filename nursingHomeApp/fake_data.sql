@@ -5,4 +5,5 @@ INSERT INTO `user` (`role`, `first`, `last`, `email`, `phone`, `floor`, `passwor
 INSERT INTO `user_to_facility`(`user_id`, `facility_id`, `create_user`) VALUES (2, 1, 1);
 INSERT INTO `user` (`role`, `first`, `last`, `email`, `phone`, `floor`, `password`, `email_confirmed`, `confirmed_on`, `create_user`, `active`, `invitation_last_sent`) VALUES ('Physician', 'Test', 'Test', 'test@physician.com', NULL, '', '$2b$12$SS6AzOKfWfIqe3UuuSUCEOBe2FxgcHxUUBRIvzGovEzM9FfV4Lc6a', 1, NOW(), 0, 1, NOW());
 INSERT INTO `user_to_facility`(`user_id`, `facility_id`, `create_user`) VALUES (3, 1, 1);
+INSERT INTO `notification` (`user_id`, `create_user`) VALUES (3, 1);
 INSERT INTO `user` (`role`, `first`, `last`, `email`, `phone`, `floor`, `password`, `email_confirmed`, `confirmed_on`, `create_user`, `active`, `invitation_last_sent`) VALUES ('Site Admin', 'Test', 'Test', 'test@siteadmin.com', NULL, '', '$2b$12$SS6AzOKfWfIqe3UuuSUCEOBe2FxgcHxUUBRIvzGovEzM9FfV4Lc6a', 1, NOW(), 0, 1, NOW())
