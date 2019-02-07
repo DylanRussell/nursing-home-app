@@ -1,3 +1,6 @@
+from wtforms.validators import ValidationError
+
+
 def STR_2_NONE(x):
     return x or None
 
