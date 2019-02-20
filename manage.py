@@ -6,7 +6,7 @@ import MySQLdb as mdb
 import unittest
 
 
-app = create_app('nursingHomeApp.config_test')
+app = create_app('nursingHomeApp.config_dev')
 manager = Manager(app)
 
 
