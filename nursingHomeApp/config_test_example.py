@@ -13,15 +13,3 @@ MAIL_USERNAME = 'YOUR_MAIL_USERNAME'
 MAIL_PASSWORD = 'YOUR_MAIL_PW'
 MAIL_DEFAULT_SENDER = 'YOUR_MAIL_USERNAME'
 MAIL_UTILS_ERROR_SEND_TO = ADMINS = ['YOUR_ERR_EMAIL']
-canAdd = {'Clerk': ['Physician', 'Nurse Practitioner'],
-             'Facility Admin': ['Facility Admin', 'Clerk Manager', 'Clerk', 'Physician', 'Nurse Practitioner'],
-             'Clerk Manager': ['Clerk', 'Physician', 'Nurse Practitioner'],
-             'Site Admin': ['Facility Admin', 'Clerk Manager', 'Clerk', 'Physician', 'Nurse Practitioner', 'Site Admin']}
-canRemove = {'Clerk': [],
-             'Facility Admin': ['Facility Admin', 'Clerk Manager', 'Clerk', 'Physician', 'Nurse Practitioner'],
-             'Clerk Manager': ['Clerk'],
-             'Site Admin': ['Facility Admin', 'Clerk Manager', 'Clerk', 'Physician', 'Nurse Practitioner', 'Site Admin']}
-canView = {'Clerk': ['Nurse Practitioner', 'Physician'],
-           'Facility Admin': ['Facility Admin', 'Clerk Manager', 'Clerk', 'Physician', 'Nurse Practitioner'],
-           'Clerk Manager': ['Clerk', 'Physician', 'Nurse Practitioner'],
-           'Site Admin': ['Facility Admin', 'Clerk Manager', 'Clerk', 'Physician', 'Nurse Practitioner', 'Site Admin']}
