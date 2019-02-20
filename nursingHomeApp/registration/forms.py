@@ -1,10 +1,10 @@
 from flask_wtf import FlaskForm
 from wtforms import PasswordField, SubmitField, TextField
-from wtforms_components import SelectField
 from wtforms.fields.html5 import EmailField, TelField
 from wtforms.validators import DataRequired
+from wtforms_components import SelectField
 from nursingHomeApp.registration.validators import is_email_unique,\
-    is_same_pw, is_valid_pw, is_valid_email
+    is_same_pw, is_valid_pw, is_valid_email, email_exists
 from nursingHomeApp.common_queries import get_facilities
 from nursingHomeApp.common_validators import is_valid_phone
 
@@ -32,11 +32,5 @@ class LoginForm(FlaskForm):
 
 
 class EmailForm(FlaskForm):
-    email = EmailField('email', validators=[DataRequired(), is_valid_email])
+    email = EmailField('email', validators=[DataRequired(), email_exists])
     submit = SubmitField('Reset Password')
-
-
-class NewPasswordForm(FlaskForm):
-    pw1 = PasswordField('password', validators=[DataRequired()])
-    pw2 = PasswordField('confirm password', validators=[DataRequired(), is_same_pw])
-    submit = SubmitField('Create Password')

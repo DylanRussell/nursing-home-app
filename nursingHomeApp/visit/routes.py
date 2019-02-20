@@ -1,12 +1,13 @@
 from __future__ import absolute_import
+import datetime
+import xlsxwriter
+from flask import render_template, flash, request, jsonify, make_response,\
+    send_file
+from flask_login import current_user
 from nursingHomeApp import mysql
 from nursingHomeApp.visit import bp
-from flask import render_template, flash, request, jsonify, make_response, send_file
 from nursingHomeApp.common import login_required, get_num_floors,\
     get_user_facility_id
-from flask_login import current_user
-import datetime, StringIO, csv, xlsxwriter
-
 
 SELECT_CLINICIANS = """SELECT CONCAT_WS(' ', u.first, u.last) FROM user u
 JOIN user_to_facility f ON f.user_id=u.id WHERE f.facility_id IN
@@ -170,54 +171,102 @@ def format_patient_info(patients, forClinician=False):
     return rows
 
 
-def get_next_visit_dates(status, lvByN, lvByDr, admit, mcaid):
-    """Returns: Next patient visit, next patient visit that must be
-    administered by a doctor. lvByNurse and lvByDr may both be null"""
-    if lvByDr and lvByN:
-        lv = max(lvByDr, lvByN)
-    else:
-        lv = lvByDr or lvByN or admit
+def get_next_visit_dates(status, last_nurse_visit, last_dr_visit, admit, mcaid):
+    """Returns: A tuple of two datetime objects representing the next patient 
+    visit, and the next patient visit that must be administered by a doctor.
+    These two dates may be the same.
+    
+    Args:
+        status: A string which represents the patient's status. May be one of 
+                'Long Term Care', 'Skilled Care / New Admission', 
+                'Assisted Living'. A patient may also have a status of 
+                'Discharged' but these patients are filtered out before this
+                function is called, as they don't have a next visit date.
+        last_nurse_visit: datetime object representing last time a nurse visited
+                          the patient, will be None if there was no last visit.
+        last_doctor_visit: same as last_nurse_visit but for a doctor.
+        admit: datetime object representing when a patient was admitted
+        mcaid: a boolean representing whether the patient is on medicaid.
+    """
+    # Determine when the patient was most recently visited. If the patient
+    # has not been visited yet, their admit date is instead used.
+    last_visit = max(x for x in (last_dr_visit, last_nurse_visit, admit) if x)
+
+    # If a patient is in long term care, they only need to be visited by a dr
+    # every 365 days, unless they are on medicaid then it is every 120 days.
+    # Additionally they must be visited at a minimum every 60 days (by anyone)
     if status == 'Long Term Care':
-        nvByDr = (lvByDr or lv) + datetime.timedelta(days=365 if mcaid else 120)
-        nv = min(lv + datetime.timedelta(days=60), nvByDr)
+        next_dr_visit = (last_dr_visit or last_visit) + datetime.timedelta(days=365 if mcaid else 120)
+        next_visit = min(last_visit + datetime.timedelta(days=60), next_dr_visit)
     elif status == 'Skilled Care / New Admission':
-        nv = lv + datetime.timedelta(days=30)
-        if lv == lvByDr:
-            nvByDr = lvByDr + datetime.timedelta(days=60)
+        next_visit = last_visit + datetime.timedelta(days=30)
+        if last_visit == last_dr_visit:
+            next_dr_visit = last_dr_visit + datetime.timedelta(days=60)
         else:
-            nvByDr = nv
+            next_dr_visit = next_visit
     else:  # status is assisted living
-        nv = nvByDr = (lvByDr or lv) + datetime.timedelta(days=365)
-    return nv, nvByDr
+        next_visit = next_dr_visit = (last_dr_visit or last_visit) + datetime.timedelta(days=365)
+    return next_visit, next_dr_visit
 
 
 @bp.route("/submit/upcoming", methods=['POST'])
 @login_required('upcoming_for_clerk_submit')
 def upcoming_for_clerk_submit():
-    keys = ['%s_visited_by_md', '%s_visited_on', '%s_status', '%s_note_received', '%s_orders_signed']
+    """This route receieves a form submitted by the user. The form has data on
+    visits: when the visits occured, if the visits were administered by a 
+    Physician or Nurse, and if the Clerk has received the necessary
+    documentation about the visit (they should at some point get from the
+    Physician or Nurse 2 documents: the doctors orders and a signed note.)
+    
+    Request.form is used here instead of a wtform, b/c dynamic form is hard to
+    do with wtform. Dynamic meaning the number of form fields will change
+    based on the number of active patients in the database.
+
+    The request.form object is an ImmutableMultiDict (see here:
+    http://flask.pocoo.org/docs/1.0/api/#flask.Request.form)
+    If a field was filled in by the user, that field will show up in this
+    dictionary with the key being the field's name attribute, and the value
+    being whatever the user entered as the value.
+
+    Only validation done is to ensure %s_visited_on field is filled in.
+
+    After validation, visits are added to the visit table. Also if a patient
+    has a status of 'skilled care / new admission' and this is the 3rd visit 
+    they have received while in that status, their status changes to long term 
+    care. Otherwise a visit doesn't affect their status.
+
+    This route is called via an XHR post request from the upcoming_for_clerk 
+    page only accessible to the Clerk users.
+
+    The route returns a json object to that page, with error messages if the
+    form didn't validate, otherwise the json object is empty. See below for
+    details.
+    """
+    keys = ['%s_visited_by_md', '%s_visited_on', '%s_status', 
+            '%s_note_received', '%s_orders_signed']
     errors, visits = {}, []
     for key in [x for x in request.form if x.endswith('_visited')]:
-        pId = key.split('_')[0]
-        visit = [pId] + [request.form.get(x % pId) for x in keys]
+        patient_id = key.split('_')[0]
+        visit = [patient_id] + [request.form.get(x % patient_id) for x in keys]
         visits.append(visit)
-        if not visit[2]:  # visit date a required field...
-            errors["%s_visited_on" % pId] = 'This field is required'
+        if not request.form.get('%s_visited_on' % patient_id):
+            errors['%s_visited_on' % patient_id] = 'This field is required'
     if errors or not visits:
         if not visits:
-            flash('No Visits Added - Must Select the Visited Checkbox To Add a Visit', 'danger')
+            flash(('No Visits Added - Please Check the Visited Checkbox To '
+                   'Add a Visit'), 'danger')
         return jsonify(errors)
     # add visits
-    curUser = current_user.id
     cursor = mysql.connection.cursor()
-    for pId, visitBy, visitDate, pStatus, note, orders in visits:
-        cursor.execute(INSERT_VISIT, (pId, bool(visitBy), visitDate, curUser, bool(note), bool(orders)))
-        # if patient has been visited in skilled care 3 times, they are moved to long term care
-        if pStatus == 'Skilled Care / New Admission':
-            cursor.execute(SELECT_CONSECUTIVE_SKILLED_VISITS, (pId,))
+    for patient_id, visited_by, date, status, note, orders in visits:
+        cursor.execute(INSERT_VISIT, (patient_id, bool(visited_by), date, 
+                                      current_user.id, bool(note), bool(orders)))
+        if status == 'Skilled Care / New Admission':
+            cursor.execute(SELECT_CONSECUTIVE_SKILLED_VISITS, (patient_id,))
             if cursor.fetchall()[0][0] == 2:
-                cursor.execute(PATIENT_MOVED_2_LONG_TERM_CARE, (pId,))
+                cursor.execute(PATIENT_MOVED_2_LONG_TERM_CARE, (patient_id,))
             else:
-                cursor.execute(PATIENT_RECEIVED_SKILLED_VISIT, (pId,))
+                cursor.execute(PATIENT_RECEIVED_SKILLED_VISIT, (patient_id,))
     mysql.connection.commit()
     flash('Successfully added %s patient visits!' % len(visits), 'success')
     return jsonify({})

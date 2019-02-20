@@ -1,5 +1,5 @@
-from nursingHomeApp import mysql, bcrypt
 from wtforms.validators import ValidationError, StopValidation
+from nursingHomeApp import mysql, bcrypt
 
 
 IS_EMAIL_VALID = "SELECT * FROM user WHERE email=%s AND password IS NOT NULL"
@@ -10,7 +10,7 @@ DOES_EMAIL_EXIST = "SELECT * FROM user WHERE email=%s"
 def is_valid_email(form, field):
     cursor = mysql.connection.cursor()
     if not cursor.execute(IS_EMAIL_VALID, (form.email.data,)):
-        raise StopValidation('This email is not associated with an account')
+        raise StopValidation('This e-mail is not associated with an account')
 
 
 def is_valid_pw(form, field):
@@ -30,3 +30,9 @@ def is_email_unique(form, field):
     cursor = mysql.connection.cursor()
     if cursor.execute(DOES_EMAIL_EXIST, (form.email.data,)):
         raise ValidationError('This email is already in use!')
+
+
+def email_exists(form, field):
+    cursor = mysql.connection.cursor()
+    if not cursor.execute(DOES_EMAIL_EXIST, (form.email.data,)):
+        raise ValidationError('This e-mail is not associated with an account.')
