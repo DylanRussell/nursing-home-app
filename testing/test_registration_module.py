@@ -20,7 +20,8 @@ class TestRegistrationModule(BaseTestCase):
             ('test@clerk.com', 'abc123', 'You Have Been Logged In!', True)
             ]
         for email, pword, message, authenticated in options:
-            with self.client:  # preserve request context and session
+            # preserve request context and session - required to keep current_user object around
+            with self.client:
                 response = self.login_user(email, pword)
                 self.assertIn(message, response.get_data())
                 self.assertTrue(current_user.is_authenticated == authenticated)
