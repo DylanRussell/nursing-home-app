@@ -1,9 +1,9 @@
 from __future__ import absolute_import
-import datetime
-import xlsxwriter
-from flask import render_template, flash, request, jsonify, make_response,\
-    send_file
+from datetime import timedelta, datetime
+import StringIO
+from flask import render_template, flash, request, jsonify, Response
 from flask_login import current_user
+import xlsxwriter
 from nursingHomeApp import mysql
 from nursingHomeApp.visit import bp
 from nursingHomeApp.common import login_required, get_num_floors,\
@@ -48,127 +48,304 @@ update_date=NOW() WHERE id=%s"""
 @bp.route("/upcoming/clinician", methods=['GET'])
 @login_required('upcoming_for_clinician')
 def upcoming_for_clinician():
-    rows = format_patient_info(get_patient_info(current_user.id), True)
-    today = datetime.datetime.now().strftime('%Y-%m-%d')
-    return render_template('visit/upcoming_for_clinician.html', patients=rows,
-                           today=today)
+    """Only users with the role Physician or Nurse Practitioner have permission 
+    to access this page.
+
+    This view contains a table of upcoming visits with a row for each active 
+    patient belonging to the logged in clinician.
+    """
+    patients = prepare_patient_info(get_patient_info(current_user.id), True)
+    return render_template('visit/upcoming_for_clinician.html',
+                           patients=patients,
+                           today=datetime.now().strftime('%Y-%m-%d'))
 
 
-def format_visits_for_report(rows):
-    data = []
-    h = ["Name", "Room", "Next Required Visit (Doctor or APRN)", "Next Required Doctor Visit", "Doctor", "Last Visit by APRN", "Last Visit by Doctor"]
-    for pId, name, status, rm, np, md, nvDays, nvByDrDays, nv, nvByDr, lvByN, lvByDr in rows:
-        data.append([name, rm, nv, nvByDr, md, lvByN, lvByDr, nvDays])
-    return h, sorted(data, key=lambda x: (x[-4], x[-1]))
+def write_to_xlsx(rows):
+    """Writes patient / visit data to an in-memory excel workbook. Then
+    that file is read into a flask Response object. Headers are added and then
+    the Response object is returned.
 
+    Args:
+        rows: a list of lists. each list contains a single patient's 
+              upcoming visit info (see get_patient_info and prepare_patient_info 
+              functions).
+    Returns:
+        response: A flask Response object containing the in-memory workbook to
+                  be returned to the user.
+    """
 
-def write_to_xlsx(headers, rows):
-    workbook = xlsxwriter.Workbook('Upcoming_Visits.xlsx')
+    # filter out information user doesn't need to see like the patient_id
+    filtered_rows = []
+    for (_, name, _, room, _, doctor, days_until_next_visit, _, next_visit, 
+         next_dr_visit, last_nurse_visit, last_doctor_visit) in rows:
+        filtered_rows.append([name, room, next_visit, next_dr_visit, doctor,
+                              last_nurse_visit, last_doctor_visit, 
+                              days_until_next_visit])
+    # sort ascending by doctor name, days_until_next_visit
+    filtered_rows.sort(key=lambda x: (x[-4], x[-1]))
+    # header row
+    headers = ["Name", "Room", "Next Required Visit (Doctor or APRN)", 
+               "Next Required Doctor Visit", "Doctor", "Last Visit by APRN",
+               "Last Visit by Doctor"]
+    # Create an in-memory output file for the new workbook.
+    output = StringIO.StringIO()
+    # Create workbook
+    workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+    sheet = workbook.add_worksheet('Upcoming Visits')
+    # Create formats
     header = workbook.add_format({'bold': True, 'border': 1})
-    sheet = workbook.add_worksheet(name='Upcoming Visits')
-    sheet.write_row(0, 0, headers, header)
-    data = workbook.add_format({'border': 1})
     upcoming = workbook.add_format({'border': 1, 'bg_color': '#DC4C46'})
-    for rowNum, row in enumerate(rows, 1):
-        nvDays = row.pop()
-        fmt = upcoming if nvDays < 8 else data
-        sheet.write_row(rowNum, 0, row, fmt)
+    data = workbook.add_format({'border': 1})
+    # write data
+    sheet.write_row(0, 0, headers, header)
+    for row_number, row in enumerate(filtered_rows, 1):
+        days_until_next_visit = row.pop()
+        fmt = upcoming if days_until_next_visit < 8 else data
+        sheet.write_row(row_number, 0, row, fmt)
+    # Close the workbook before streaming the data.
     workbook.close()
+    # Rewind the buffer.
+    output.seek(0)
+    # Flask response
+    response = Response(output.read(), 200)
+
+    file_name = 'Upcoming_Visits_{}.xlsx'.format(datetime.now())
+
+    # HTTP headers for forcing file download
+    response.headers = {
+        'Pragma': 'public',
+        'Expires': '0',
+        'Cache-Control': 'must-revalidate, private',
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': 'attachment; filename="%s";' % file_name,
+        'Content-Transfer-Encoding': 'binary',
+        'Content-Length': len(response.data)
+        }
+    return response
 
 
 @bp.route("/prior", methods=['GET', 'POST'])
 @login_required('prior_visits')
 def prior_visits():
+    """Only users with the role Clerk or Clerk Manager have permission to access
+    this page.
+
+    All incomplete visits (incomplete meaning one of the doctors note /
+    signed orders were missing when the visit was added) OR visits added in the 
+    last 5 weeks (regardless of if they are incomplete) are listed in a table.
+
+    From this view the Clerk user can update the visit date, if the visit was
+    administered by a doctor/nurse, and if they receieved either of
+    the 2 forms above.
+
+    Similar to the upcoming_for_clerk_submit route in that the Request.form
+    object is used instead of a wtform due to dynamic forms being difficult
+    to generate with wtforms.
+
+    Both of these routes should be refactored to use a wtform - here
+    is a possible starting point:
+    https://stackoverflow.com/questions/12353603/dynamic-forms-from-variable-length-elements-wtforms
+
+    Current approach is for each visit sent to the view, 4 form fields are 
+    generated in the template. The name attributes given to these fields, which
+    map to keys in the request.form dictionary are:  %s_visited_by_md,
+    %s_note_received, %s_orders_signed, %s_visited_on where %s is replaced
+    by the id of the visit. The visit_id is prepended to each name attribute
+    in order to differentiate the fields - so we can determine which visit
+    each field corresponds to in the visit database table.
+
+    If a field doesn't validate (in this case the only validation done is 
+    to ensure the visit_date field isn't empty) the field name is used as a
+    key in a dictionary named errors, and the value is the error message.
+
+    Then in the template there is some javascript code which will append the
+    error message to the DOM beside the field which generated the error.
+
+    If there aren't any errors the visit table is updated and an empty
+    errors dictionary is returned to the template. There is javascript code in
+    the template which will refresh the page if the errors dictionary is empty.
+
+    The same approach is used in the upcoming_for_clerk_submit route, except
+    that route INSERTs new visits, and the patient_id is prepended to the
+    field name instead of the visit_id for use in the INSERT statement.
+    """
     visits = get_prior_visits()
     if request.method == 'POST':
+        # map visit_id to a tuple: (visit_date, doctor_visit, note, order)
+        # this will be used to check if any data regarding the visit changed
+        # and thus needs to be updated in the db
         prev = {x[0]: x[3:] for x in visits}
         errors, visits = {}, []
-        for key in [x for x in request.form if x.endswith('_visited_on')]:
-            vId = int(key.split('_')[0])
-            vDate = request.form.get(key)
-            byDr, note, order = (int(request.form.get(x % vId) == 'on') for x in ('%s_visited_by_md', '%s_note_received', '%s_orders_signed'))
-            if prev[vId] != (vDate, byDr, note, order):
-                visits.append((vId, vDate, byDr, note, order))
-            if not vDate:  # visit date a required field...
-                errors["%s_visited_on" % vId] = 'This field is required'
+        keys = ['%s_visited_by_md', '%s_note_received', '%s_orders_signed']
+        for visit_date_key in [x for x in request.form if x.endswith('_visited_on')]:
+            visit_id = int(visit_date_key.split('_')[0])
+            visit_date = request.form.get(visit_date_key)
+            doctor_visit, note, order = (int(bool(request.form.get(x % visit_id)))
+                                         for x in keys)
+            if not visit_date:  # visit date a required field...
+                errors[visit_date_key] = 'This field is required'
+            elif prev[visit_id] != (visit_date, doctor_visit, note, order):
+                # user updated this visit
+                visits.append((visit_id, visit_date, doctor_visit, note, order))
         if not visits:
             flash('No Visits Updated - No Changes Were Made', 'danger')
         elif not errors:
             cursor = mysql.connection.cursor()
-            for vId, vDate, byDr, note, order in visits:
-                cursor.execute(UPDATE_VISIT, (vDate, note, order, byDr, current_user.id, vId))
+            for visit_id, visit_date, doctor_visit, note, order in visits:
+                args = (visit_date, note, order, doctor_visit, current_user.id, 
+                        visit_id)
+                cursor.execute(UPDATE_VISIT, args)
             mysql.connection.commit()
-            flash('Successfully updated %s patient visits!' % len(visits), 'success')
-        return jsonify(errors)  # if errors dict empty, client side code will refresh the page and flashed messages will appear
+            flash('Successfully updated %s visits!' % len(visits), 'success')
+        return jsonify(errors)
     return render_template('visit/prior_visits.html', visits=visits)
 
 
 @bp.route("/upcoming", methods=['GET', 'POST'])
 @login_required('upcoming_for_clerk')
 def upcoming_for_clerk():
-    rows = format_patient_info(get_patient_info())
+    """Only users with the role Clerk or Clerk Manager have permission to
+    access this page. Clerk users are responsible for most of the data entry on
+    the site. Clerk users belong to a single facility.
+
+    This view contains a table of upcoming visits with a row for each active 
+    patient belonging to the logged in user's facility.
+
+    From this view the Clerk user can mark if an upcoming visit has occured - 
+    see the upcoming_for_clerk_submit route below (this route is called
+    via an ajax call from the view).
+
+    Also from this view the Clerk can download the contents of the table
+    into an excel file by hitting a download button which submits a POST
+    request to this route.
+    """
+    patients = prepare_patient_info(get_patient_info())
     if request.method == 'POST':
-        write_to_xlsx(*format_visits_for_report(rows))
-        return send_file("../Upcoming_Visits.xlsx")
-    clinicians = get_clinicians()
-    today = datetime.datetime.now().strftime('%Y-%m-%d')
-    return render_template('visit/upcoming_for_clerk.html', numFloors=get_num_floors(),
-                           clinicians=clinicians, patients=rows, today=today,
+        return write_to_xlsx(patients)
+    return render_template('visit/upcoming_for_clerk.html', 
+                           numFloors=get_num_floors(), patients=patients,
+                           today=datetime.now().strftime('%Y-%m-%d'),
+                           clinicians=get_clinicians(),
                            curFloor=current_user.floor)
 
 
 def get_prior_visits():
+    """SELECTs all visits that occured in the logged in user's facility that
+    were added in the last 5 weeks, OR which are missing either the doctor's
+    note or the signed order's both of which are forms that must be obtained
+    by the Clerk after each visit.
+
+    Called from the prior_visits route accessible only to Clerk users.
+    """
     cursor = mysql.connection.cursor()
-    cursor.execute(SELECT_VISITS, (get_user_facility_id(), ))
+    cursor.execute(SELECT_VISITS, (get_user_facility_id(),))
     return cursor.fetchall()
 
 
 def get_clinicians():
+    """Get all clinicians belonging to the logged in user's facility for use in 
+    the upcoming_for_clerk view - Clerk users can select a clinician and the 
+    list of patients will be filtered to only show patients that belong to the 
+    selected clinician.
+
+    Returns list of strings (clinician names).
+    """
     cursor = mysql.connection.cursor()
     cursor.execute(SELECT_CLINICIANS, (current_user.id, ))
     return [x[0] for x in cursor.fetchall()]
 
 
-def get_patient_info(clinicianId=None):
-    """Gets patients id, name, status, room no, nurse's name, doctor's name,
-    admit date, last nurse visit, last doctor visit all active patients"""
+def get_patient_info(clinician_id=None):
+    """Retrieves patient & visit data. If a clinician_id is given, only active 
+    patients that belong to that clinician are fetched from the database. 
+    Otherwise all active patients that belong to the logged in user's facility
+    are retrieved.
+    
+    If the function is called from the upcoming_for_clinician route, a route
+    only accessible to clinicians (Physician / Nurse users), then the function is
+    called with a clinician_id.
+
+    The function is also called from the upcoming_for_clerk route without the
+    clinician_id argument, this route is only accessible to clerks. Clerks 
+    belong to a single facility, so it is safe to fetch just those patients 
+    belonging to that facility.
+
+    Args: 
+        clinician_id: id of a user with the role of Physician or Nurse
+                      Practitioner
+    Returns:
+        patients: list of tuples. each tuple has 9 elements: patients id, name,
+                  status, room no, nurse's name, doctor's name, admit date, 
+                  last nurse visit (or None if doesn't exist), 
+                  last doctor visit (or None if doesn't exist).
+    """
     patients = []
-    q = SELECT_PATIENTS
-    if clinicianId:
-        q += " AND (p.NP_ID=%s OR p.MD_ID=%s)" % (clinicianId, clinicianId)
+    query = SELECT_PATIENTS
+    if clinician_id is not None:
+        query += " AND (p.NP_ID=%s OR p.MD_ID=%s)" % (clinician_id, clinician_id)
     else:
-        q += " AND facility_id=%s" % get_user_facility_id()
+        query += " AND facility_id=%s" % get_user_facility_id()
     cursor = mysql.connection.cursor()
-    cursor.execute(q)
-    for p in cursor.fetchall():
-        pId = p[0]
-        for visit in [SELECT_LAST_APRN_VISIT, SELECT_LAST_DR_VISIT]:
-            if cursor.execute(visit, (pId,)):
-                p += cursor.fetchone()
+    cursor.execute(query)
+    for patient in cursor.fetchall():
+        patient_id = patient[0]
+        for select_last_visit in [SELECT_LAST_APRN_VISIT, SELECT_LAST_DR_VISIT]:
+            if cursor.execute(select_last_visit, (patient_id,)):
+                patient += cursor.fetchone()
             else:
-                p += (None,)
-        patients.append(p)
+                patient += (None,)
+        patients.append(patient)
     return patients
 
 
-def fmt_date(x):
-    return x.strftime('%m/%d/%Y') if x else ''
+def fmt_date(date):
+    """Format Date for display to user"""
+    return date.strftime('%m/%d/%Y') if date else ''
 
 
-def format_patient_info(patients, forClinician=False):
-    rows = []
-    for pId, name, status, rm, np, md, admit, mcaid, lvByN, lvByDr in patients:
-        today = datetime.datetime.today().date()
-        nv, nvByDr = get_next_visit_dates(status, lvByN, lvByDr, admit, mcaid)
-        nvDays, nvByDrDays = ((nv - today).days, (nvByDr - today).days)
-        visits = map(fmt_date, (nv, nvByDr, lvByN, lvByDr))
-        if nv == nvByDr:
+def prepare_patient_info(patients, for_clinician=False):
+    """Take the list of patient & visit data fetched from the database, and
+    calculates when the next visit / next doctor visit should occur.
+
+    Returns just the information needed for the view - the upcoming_for_clinician
+    view is a simpler view that displays a list of patients and when they need
+    to be seen. The upcoming_for_clerk view is more complicated in that it 
+    allows the clerks to add new visits to the database. It requires more
+    information - such as the patient's id # in the database, not needed in the
+    view for clinicians.
+
+    Also format dates as strings for display to the user
+
+    Args:
+        patient: list of tuples retrieved in the get_patient_info function
+        for_clinician: boolean which is True if the patient info should
+                       be prepared for the upcoming_for_clinican view or
+                       False if being prepared for the upcoming_for_clerk view
+
+    Returns: list of lists for use in the upcoming_for_clerk/clinican views
+    """
+    patients_modified = []
+    today = datetime.today().date()
+    for (patient_id, name, status, room, nurse, doctor, admit, mcaid,
+         last_nurse_visit, last_doctor_visit) in patients:
+        next_visit, next_dr_visit = get_next_visit_dates(status, 
+                                                         last_nurse_visit, 
+                                                         last_doctor_visit, 
+                                                         admit, mcaid)
+        days_until_next_visit = (next_visit - today).days
+        days_until_next_dr_visit = (next_dr_visit - today).days
+        visits = [fmt_date(x) for x in (next_visit, next_dr_visit,
+                                        last_nurse_visit, last_doctor_visit)]
+        if next_visit == next_dr_visit:
             visits[0] += ' (Doctor)'
-        if forClinician:  # clinician sees stripped down view
-            rows.append([name, rm, nvDays, nvByDrDays] + visits)
+        if for_clinician:
+            patients_modified.append([name, room, days_until_next_visit,
+                                      days_until_next_dr_visit] + visits)
         else:
-            rows.append([pId, name, status, rm, np, md, nvDays, nvByDrDays] + visits)
-    return rows
+            patients_modified.append([patient_id, name, status, room, nurse, 
+                                      doctor, days_until_next_visit, 
+                                      days_until_next_dr_visit] + visits)
+    return patients_modified
 
 
 def get_next_visit_dates(status, last_nurse_visit, last_dr_visit, admit, mcaid):
@@ -196,16 +373,24 @@ def get_next_visit_dates(status, last_nurse_visit, last_dr_visit, admit, mcaid):
     # every 365 days, unless they are on medicaid then it is every 120 days.
     # Additionally they must be visited at a minimum every 60 days (by anyone)
     if status == 'Long Term Care':
-        next_dr_visit = (last_dr_visit or last_visit) + datetime.timedelta(days=365 if mcaid else 120)
-        next_visit = min(last_visit + datetime.timedelta(days=60), next_dr_visit)
+        # if a patient is in long term care, an assumption is made that they
+        # must have ben visited by a doctor at some point in the past
+        next_dr_visit = last_dr_visit + timedelta(days=365 if mcaid else 120)
+        next_visit = min(last_visit + timedelta(days=60), next_dr_visit)
+    # If a patient is in Skilled Care / New Admission then 3 visits 30 days apart
+    # are required, the first of which must be administered by a doctor. After
+    # that visit, the doctor is required to make a second visit before 60 days -
+    # same requirement as Long Term Care
     elif status == 'Skilled Care / New Admission':
-        next_visit = last_visit + datetime.timedelta(days=30)
+        next_visit = last_visit + timedelta(days=30)
         if last_visit == last_dr_visit:
-            next_dr_visit = last_dr_visit + datetime.timedelta(days=60)
+            next_dr_visit = last_dr_visit + timedelta(days=60)
         else:
             next_dr_visit = next_visit
-    else:  # status is assisted living
-        next_visit = next_dr_visit = (last_dr_visit or last_visit) + datetime.timedelta(days=365)
+    # status is assisted living. this requires the patient be seen annually by
+    # a doctor. that is the only requirement.
+    else:
+        next_visit = next_dr_visit = last_dr_visit + timedelta(days=365)
     return next_visit, next_dr_visit
 
 
@@ -228,7 +413,9 @@ def upcoming_for_clerk_submit():
     dictionary with the key being the field's name attribute, and the value
     being whatever the user entered as the value.
 
-    Only validation done is to ensure %s_visited_on field is filled in.
+    Only validation done is to ensure %s_visited_on field is filled in, 
+    where %s is the patient_id preprended to each field name attribute
+    in order to determine which patient the visit corresponds to.
 
     After validation, visits are added to the visit table. Also if a patient
     has a status of 'skilled care / new admission' and this is the 3rd visit 
@@ -239,8 +426,7 @@ def upcoming_for_clerk_submit():
     page only accessible to the Clerk users.
 
     The route returns a json object to that page, with error messages if the
-    form didn't validate, otherwise the json object is empty. See below for
-    details.
+    form didn't validate, otherwise the json object is empty.
     """
     keys = ['%s_visited_by_md', '%s_visited_on', '%s_status', 
             '%s_note_received', '%s_orders_signed']
