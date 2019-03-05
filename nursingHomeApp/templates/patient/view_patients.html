@@ -48,7 +48,7 @@
                   {% if current_user.role not in ['Physician', 'Nurse Practitioner'] %}
                     <td>{{status}}</td>
                     <td>{{mdName}}</td>
-                    <td>{{ 'Yes' if hasMedicaid else 'No' }}</td>
+                    <td>{{hasMedicaid}}</td>
                     <td><a href="{{url_for('patient.update_patient', id=pId)}}">Update Patient</a></td>
                   {% endif %}
               </tr>
