@@ -6,4 +6,11 @@ INSERT INTO `user_to_facility`(`user_id`, `facility_id`, `create_user`) VALUES (
 INSERT INTO `user` (`role`, `first`, `last`, `email`, `phone`, `floor`, `password`, `email_confirmed`, `confirmed_on`, `create_user`, `active`, `invitation_last_sent`) VALUES ('Physician', 'Test', 'Test', 'test@physician.com', NULL, '', '$2b$12$SS6AzOKfWfIqe3UuuSUCEOBe2FxgcHxUUBRIvzGovEzM9FfV4Lc6a', 1, NOW(), 0, 1, NOW());
 INSERT INTO `user_to_facility`(`user_id`, `facility_id`, `create_user`) VALUES (3, 1, 1);
 INSERT INTO `notification` (`user_id`, `create_user`) VALUES (3, 1);
-INSERT INTO `user` (`role`, `first`, `last`, `email`, `phone`, `floor`, `password`, `email_confirmed`, `confirmed_on`, `create_user`, `active`, `invitation_last_sent`) VALUES ('Site Admin', 'Test', 'Test', 'test@siteadmin.com', NULL, '', '$2b$12$SS6AzOKfWfIqe3UuuSUCEOBe2FxgcHxUUBRIvzGovEzM9FfV4Lc6a', 1, NOW(), 0, 1, NOW())
+INSERT INTO `user` (`role`, `first`, `last`, `email`, `phone`, `floor`, `password`, `email_confirmed`, `confirmed_on`, `create_user`, `active`, `invitation_last_sent`) VALUES ('Site Admin', 'Test', 'Test', 'test@siteadmin.com', NULL, '', '$2b$12$SS6AzOKfWfIqe3UuuSUCEOBe2FxgcHxUUBRIvzGovEzM9FfV4Lc6a', 1, NOW(), 0, 1, NOW());
+INSERT INTO `patient` (`first`, `last`, `room_number`, `status`, `MD_id`, `admittance_date`, `has_medicaid`, `facility_id`) VALUES ('Test', 'Long Term Patient', '1A', '1', '3', '2019-01-01', '0', '1');
+INSERT INTO `visit` (`patient_id`, `visit_done_by_doctor`, `visit_date`, `note_received`, `orders_signed`) VALUES ('1', '1', '2019-01-01', '0', '0');
+INSERT INTO `visit` (`patient_id`, `visit_done_by_doctor`, `visit_date`, `note_received`, `orders_signed`) VALUES ('1', '0', '2019-01-10', '0', '0');
+INSERT INTO `patient` (`first`, `last`, `room_number`, `status`, `MD_id`, `admittance_date`, `has_medicaid`, `facility_id`) VALUES ('Matt', 'Peterson', '1D', '1', '3', '2019-01-01', '0', '1');
+INSERT INTO `visit` (`patient_id`, `visit_done_by_doctor`, `visit_date`, `note_received`, `orders_signed`) VALUES ('2', '1', '2019-01-01', '0', '0');
+INSERT INTO `visit` (`patient_id`, `visit_done_by_doctor`, `visit_date`, `note_received`, `orders_signed`) VALUES ('2', '0', '2019-01-10', '0', '0');
+INSERT INTO `patient` (`first`, `last`, `room_number`, `status`, `MD_id`, `admittance_date`, `has_medicaid`, `facility_id`) VALUES ('Test', 'New Admission', '2A', '2', '3', '2019-01-01', '1', '1')
