@@ -1,13 +1,15 @@
 from __future__ import absolute_import
+import logging
+from logging.handlers import SMTPHandler, RotatingFileHandler
+import os
 from flask import Flask
-from nursingHomeApp.flask_mysql import MySQL
 from flask_bcrypt import Bcrypt
-from flask_login import LoginManager
 from flask_bootstrap import Bootstrap
+from flask_login import LoginManager
 from flask_mail import Mail
 from flask_sslify import SSLify
-import os, logging
-from logging.handlers import SMTPHandler, RotatingFileHandler
+from nursingHomeApp.flask_mysql import MySQL
+
 
 
 lm = LoginManager()
@@ -36,12 +38,11 @@ def create_app(config_file='nursingHomeApp.config_prod'):
     if not app.debug and not app.testing:
         SSLify(app)
         auth = (app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
-        secure = ()
         mail_handler = SMTPHandler(
             mailhost=(app.config['MAIL_SERVER'], app.config['MAIL_PORT']),
             fromaddr=app.config['MAIL_SERVER'],
-            toaddrs=app.config['ADMINS'], subject='nursingHomeApp Failure',
-            credentials=auth, secure=secure)
+            toaddrs=app.config['ADMINS'], subject='VisitMinder Failure',
+            credentials=auth, secure=())
         mail_handler.setLevel(logging.ERROR)
         app.logger.addHandler(mail_handler)
         if not os.path.exists('logs'):
