@@ -1,8 +1,8 @@
 from __future__ import absolute_import
-from nursingHomeApp import mysql
 from functools import wraps
-from flask_login import current_user
 from flask import flash, redirect, url_for, request, jsonify
+from flask_login import current_user
+from nursingHomeApp import mysql
 
 
 SELECT_FLOOR_CNT = """SELECT num_floors FROM facility WHERE id IN
