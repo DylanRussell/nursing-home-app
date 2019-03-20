@@ -1,15 +1,14 @@
 from __future__ import absolute_import
+from functools import wraps
 from urlparse import urlparse, urljoin
-from flask import render_template, request, url_for, flash, redirect, current_app
+from flask import render_template, request, url_for, flash, redirect, current_app, jsonify
 from flask_login import logout_user, login_user, current_user
 from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer, BadSignature
 from nursingHomeApp import mysql, lm, mail, bcrypt
 from nursingHomeApp.registration import bp
-from nursingHomeApp.common import login_required
 from nursingHomeApp.registration.forms import LoginForm, AddUserForm,\
     PasswordForm, EmailForm
-
 
 # map of user role, to list of user roles that role is allowed to add
 # when adding a user
@@ -77,6 +76,44 @@ UPDATE_INVITATION_SENT = """UPDATE user SET invitation_last_sent=NOW(),
 update_user=%s, update_date=NOW() WHERE id=%s"""
 SELECT_USERS_FACILITIES = """SELECT u.user_id, f.name FROM user_to_facility u
 JOIN facility f ON f.id=u.facility_id"""
+
+
+def login_required(view_name):
+    """View decorator for views requiring login"""
+    def wrapper(view):
+        """wraps view functions"""
+        @wraps(view)
+        def decorated_view(*args, **kwargs):
+            """First check if user has logged in using flask_login's current_user.is_authenticated.
+            Then check if the user's role has permission to view the requested page. 
+
+            If the user passes these checks they are allowed to view the page, otherwise
+            they are redirected to the login screen and flashed a message.
+
+            Each view name requiring login is assigned a unique bit in the permission table. 
+
+            Each user role is assigned a bit mask in the user_role table.
+
+            If the bit associated with a view name is set in the bit mask, then
+            that user role is allowed access to the view.
+            """
+            if not current_user.is_authenticated:
+                flash('You must be logged in to view this page.', 'warning')
+                if request.is_xhr:
+                    return jsonify({'url': url_for('registration.login')})
+                return redirect(url_for('registration.login'))
+            role = current_user.role
+            cursor = mysql.connection.cursor()
+            if not cursor.execute("""SELECT * FROM user_role WHERE
+                    (select role_value FROM user_role WHERE role=%s) &
+                    (select bit from permission where name=%s)""", (role, view_name)):
+                flash('You are not authorized to view this page.', 'danger')
+                if request.is_xhr:
+                    return jsonify({'url': url_for('registration.login')})
+                return redirect(url_for('registration.login'))
+            return view(*args, **kwargs)
+        return decorated_view
+    return wrapper
 
 
 @bp.route("/logout")
