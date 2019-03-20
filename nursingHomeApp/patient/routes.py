@@ -5,10 +5,10 @@ from flask import render_template, flash, redirect, url_for, request,\
     make_response
 from flask_login import current_user
 from nursingHomeApp import mysql
-from nursingHomeApp.common import login_required, get_num_floors,\
-    get_user_facility_id
+from nursingHomeApp.common_queries import get_num_floors, get_user_facility_id
 from nursingHomeApp.patient import bp
 from nursingHomeApp.patient.forms import AddPatientForm, UpdatePatientForm
+from nursingHomeApp.registration.routes import login_required
 
 
 

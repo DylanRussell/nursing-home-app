@@ -2,9 +2,10 @@ from __future__ import absolute_import
 from flask import render_template, flash, redirect, url_for
 from flask_login import current_user
 from nursingHomeApp import mysql
-from nursingHomeApp.common import login_required, get_user_facility_id
+from nursingHomeApp.common_queries import get_user_facility_id
 from nursingHomeApp.facility import bp
 from nursingHomeApp.facility.forms import AddFacilityForm, AddCliniciansForm
+from nursingHomeApp.registration.routes import login_required
 
 
 INSERT_FACILITY = """INSERT INTO facility (name, address, city, state, zipcode,

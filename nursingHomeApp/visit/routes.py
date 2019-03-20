@@ -6,8 +6,9 @@ from flask_login import current_user
 import xlsxwriter
 from nursingHomeApp import mysql
 from nursingHomeApp.visit import bp
-from nursingHomeApp.common import login_required, get_num_floors,\
-    get_user_facility_id
+from nursingHomeApp.common_queries import get_num_floors, get_user_facility_id
+from nursingHomeApp.registration.routes import login_required
+
 
 SELECT_CLINICIANS = """SELECT CONCAT_WS(' ', u.first, u.last) FROM user u
 JOIN user_to_facility f ON f.user_id=u.id WHERE f.facility_id IN

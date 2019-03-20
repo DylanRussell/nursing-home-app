@@ -3,9 +3,9 @@ from flask import render_template, url_for, flash, redirect
 from flask_login import current_user
 from twilio.twiml.messaging_response import MessagingResponse
 from nursingHomeApp import mysql
-from nursingHomeApp.common import login_required
 from nursingHomeApp.notification import bp
 from nursingHomeApp.notification.forms import NotificationForm
+from nursingHomeApp.registration.routes import login_required
 
 
 OPT_OUT = """UPDATE notification SET email_notification_on=0, notify_designee=0,
