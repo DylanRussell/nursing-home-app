@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import unittest
+from flask import request, url_for
 from flask_login import current_user
 from testing import BaseTestCase
 from nursingHomeApp import mysql, mail
@@ -25,6 +26,45 @@ class TestRegistrationModule(BaseTestCase):
                 response = self.login_user(email, pword)
                 self.assertIn(message, response.get_data())
                 self.assertTrue(current_user.is_authenticated == authenticated)
+
+    def test_login_required_decorator(self):
+        """Test the view decorator used to restrict access to a view based on 
+        user role.
+        """
+        with self.client:
+            # add_patient view has the login_required decorator, so it cannot be
+            # accessed without being logged in
+            response = self.client.get('/add/patient', follow_redirects=True)
+            self.assertIn('You must be logged in to view this page.', response.get_data())
+            # user should be redirected to login page
+            self.assertEqual(request.path, url_for('registration.login'))
+        with self.app.app_context():
+            cursor = mysql.connection.cursor()
+            # get the bit representing the add_facility view
+            cursor.execute("SELECT bit FROM permission WHERE name='add_facility'")
+            add_facility_bit = cursor.fetchall()[0][0]
+            # get the bit representing the add_patient views
+            cursor.execute("SELECT bit FROM permission WHERE name='add_patient'")
+            add_patient_bit = cursor.fetchall()[0][0]
+            # get the bit mask representing which views the clerk can access
+            cursor.execute("SELECT role_value FROM user_role WHERE role='Clerk'")
+            clerk_mask = cursor.fetchall()[0][0]
+        access_denied = 'You are not authorized to view this page.'
+        # login as clerk
+        self.login_user()
+        with self.client:
+            # clerk has add_patient_bit set, so is allowed to access that page
+            self.assertEqual(clerk_mask & add_patient_bit, add_patient_bit)
+            response = self.client.get('/add/patient', follow_redirects=True)
+            self.assertNotIn(access_denied, response.get_data())
+            self.assertEqual(request.path, url_for('patient.add_patient'))
+            # clerk does not have the add_facility_bit set, so is not allowed
+            # access, and redirected to login page
+            self.assertEqual(clerk_mask & add_facility_bit, 0)
+            response = self.client.get('/add/facility', follow_redirects=True)
+            self.assertIn(access_denied, response.get_data())
+            self.assertEqual(request.path, url_for('registration.login'))
+        
 
     def test_toggle_user(self):
         """Test the `toggle_user` endpoint. Users may toggle other users active 
