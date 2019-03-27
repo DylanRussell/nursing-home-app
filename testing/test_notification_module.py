@@ -14,7 +14,7 @@ class TestNotificationModule(BaseTestCase):
         self.login_user('test@Physician.com') # login as physician user
         # update notification preferences
         form_data = {'primaryEmail': 'fake@email.com', 'notifyPrimary': 'y',
-                     'numDays': '8', 'notifyPhone': 'y', 'daysBefore': '9'}
+                     'numDays': '8', 'notifyPhone': 'y', 'daysBefore': '-9'}
         self.client.post('/notifications', data=form_data)
         # corresponding row in notification table should be updated
         with self.app.app_context():
@@ -23,7 +23,7 @@ class TestNotificationModule(BaseTestCase):
                            email_every_n_days, phone_notification_on, 
                            sms_n_days_advance FROM notification WHERE 
                            user_id=3""")
-            self.assertEqual(cursor.fetchone(), ('fake@email.com', 1, 8, 1, 9))
+            self.assertEqual(cursor.fetchone(), ('fake@email.com', 1, 8, 1, -9))
             # numDays field cannot be negative field represents how many days
             # send_notification script should wait between e-mail notifications
             form_data['numDays'] = '-8'
@@ -31,14 +31,14 @@ class TestNotificationModule(BaseTestCase):
                                         follow_redirects=True)
             self.assertIn('This field must contain a positive integer.', response.get_data())
             form_data['numDays'] = '8'
-            # daysBefore can be negative. this field represents number of days
-            # before (negative) or after (positive) an overdue visit a text 
-            # notification should be sent by send_notification script.
-            form_data['daysBefore'] = '-9'
-            self.client.post('/notifications', data=form_data)
-            cursor.execute("""SELECT sms_n_days_advance FROM notification WHERE
-                           user_id=3""")
-            self.assertEqual(cursor.fetchone()[0], -9)
+            # daysBefore must be negative. this field represents number of days
+            # before an overdue visit a text notification should be sent by
+            # send_notification script.
+            form_data['daysBefore'] = '8'
+            response = self.client.post('/notifications', data=form_data,
+                                        follow_redirects=True)
+            self.assertIn('This field must contain a negative integer.', response.get_data())
+
 
     def test_opt_out(self):
         """Test the "/opt/out/<int:userId>" route, allows a user to opt out of
