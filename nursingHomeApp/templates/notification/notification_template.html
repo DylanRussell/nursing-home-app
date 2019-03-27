@@ -10,21 +10,20 @@
     <thead>
       <tr>
         <th>Name</th>
-        <th>Facility Name</th>
         <th>Room</th>
-        <th>Last Visit</th>
+        <th>Last Doctor Visit</th>
         <th>Next Required Visit (Doctor or Nurse)</th>
         <th>Next Required Doctor Visit</th>
       </tr>
     </thead>
-      {% for name, facility, rm, lvDesc, nvDesc, nvByDrDesc, nvDays, nvByDrDays in patients %}
+      {% for name, room, days_until_next_visit, days_until_next_dr_visit, next_visit, 
+        next_dr_visit, last_nurse_visit, last_doctor_visit in patients %}
         <tr>
           <td>{{name}}</td>
-          <td>{{facility}}</td>
-          <td>{{rm}}</td>
-          <td>{{lvDesc}}</td>
-          <td>{{nvDesc}}</td>
-          <td>{{nvByDrDesc}}</td>
+          <td>{{room}}</td>
+          <td>{{last_doctor_visit}}</td>
+          <td>{{next_visit}}</td>
+          <td>{{next_dr_visit}}</td>
         </tr>
       {% endfor %}
     <tbody>

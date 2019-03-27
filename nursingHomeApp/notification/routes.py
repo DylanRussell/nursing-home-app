@@ -23,7 +23,7 @@ WHERE user_id=%s"""
 def sms_reply():
     """Respond to incoming calls/texts with a simple text message.
     
-    twilio is used to send out text messages (see the send_notifications_example.py
+    twilio is used to send out text messages (see the send_notifications.py
     script). Twilio's api is also used here to send a text message response whenever
     a user texts or emails the twilio number that texted them.
     """
@@ -81,7 +81,7 @@ def notifications():
     request is made). See that route's docstring for more details.
 
     See the NotificationForm for which fields can be updated and what they are
-    used for. Also see the send_notifications_example.py script, as this script
+    used for. Also see the send_notifications.py script, as this script
     is what makes use of the notification table to send out text and e-mail
     notifications.
     """

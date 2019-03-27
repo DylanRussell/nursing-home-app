@@ -1,0 +1,3 @@
+# The newline at the end of this file is extremely important.  Cron won't run without it. 
+# Run every 30 minutes:
+*/30 * * * * root /opt/python/run/venv/bin/python /opt/python/current/app/manage.py -c nursingHomeApp.config_prod notify > /dev/null

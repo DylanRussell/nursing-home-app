@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import SubmitField, IntegerField, BooleanField
 from wtforms.fields.html5 import EmailField, TelField
-from nursingHomeApp.common_validators import STR_2_NONE, is_valid_phone, is_gt_zero
+from nursingHomeApp.common_validators import STR_2_NONE, is_valid_phone, is_gt_zero, is_lt_zero
 
 
 class NotificationForm(FlaskForm):
@@ -23,9 +23,8 @@ class NotificationForm(FlaskForm):
                      filters=[STR_2_NONE])
     # Boolean value: True means send text notifications, False means don't send
     notifyPhone = BooleanField('Text Notifications To Phone')
-    # an integer representing how many days before or after the day a visit becomes
-    # overdue a text message should be sent out. negative number is OK, means the
-    # text should be sent before the visit has become overdue. field will not
-    # validate if empty (required)
-    daysBefore = IntegerField('Send Text N Days Prior to Overdue Visit')
+    # a negative integer representing how many days before a visit becomes
+    # overdue a text message should be sent out. must be negative
+    daysBefore = IntegerField('Send Text N Days Prior to Overdue Visit',
+                              validators=[is_lt_zero])
     submit = SubmitField('Update')

@@ -8,9 +8,6 @@
 
 !.elasticbeanstalk/*.global.yml
 
-# notification script containing sensitive information
-send_notifications.py
-
 # Config Files
 
 nursingHomeApp/config_prod.py

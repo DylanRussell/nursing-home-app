@@ -20,3 +20,8 @@ def is_gt_zero(form, field):
     """Raises validation error if field <= 0"""
     if field.data <= 0:
         raise ValidationError('This field must contain a positive integer.')
+
+def is_lt_zero(form, field):
+    """Raises validation error if field >= 0"""
+    if field.data >= 0:
+        raise ValidationError('This field must contain a negative integer.')

@@ -19,7 +19,8 @@ bcrypt = Bcrypt()
 mail = Mail()
 
 
-def create_app(config_file='nursingHomeApp.config_prod'):
+def create_app(config_file='nursingHomeApp.config_dev'):
+    """App factory function"""
     app = Flask(__name__)
     app.config.from_object(config_file)
     Bootstrap(app)
