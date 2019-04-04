@@ -127,12 +127,12 @@ Patient status basically only matters when calculating the next visit dates. For
 
 For now only Physician users receieve notifications. Twilio is used for sending out text notifications, and a gmail account for e-mail notifications. A user can update their notification preferences by filling out a form which will update the notification table upon submission (see the /notifications endpoint [here](nursingHomeApp/notification/routes.py)).
 
-See the [send_notifications.py script](nursingHomeApp/send_notifications.py) for how the notification table is used in sending out email/text notifications. This script is run via a cron job every 30 minutes (see [here](nursingHomeApp/.ebextensions) for more on how this is configured).
+See the [send_notifications.py script](nursingHomeApp/send_notifications.py) for how the notification table is used in sending out email/text notifications. This script is run via a cron job every 30 minutes (see [here](.ebextensions) for more on how this is configured).
 
 
 #### Facility
 
-This module hasn't received very much use yet, as the web app has only been used by a single nursing facility (instead of a group of facilities). The idea is that multiple facilities can use a single version of the web application / MySQL database at the same time. This module is mostly for adding/updating/viewing the facility and the user_to_facility mapping tables.
+This module hasn't received very much use yet, as the web app has only been used by a single nursing facility (instead of a group of facilities). The idea is that multiple facilities can use a single version of the web application / MySQL database at the same time. This module is mostly for adding/updating/viewing the facility table and the user_to_facility mapping table.
 
 Users are restricted to only seeing data from the facility (or facilities) to which they belong. For example a Facility Admin user will only be able to view patients who belong to the same facility as them. 
 
@@ -155,7 +155,7 @@ Create audit trail tables, and triggers to populate the tables by including the 
 
 I haven't used these for anything yet. I think they may be required by HIPPA.
 
-To view a full list of commands and arguments run ```python manage.py help```.
+To view a full list of commands and arguments run ```python manage.py -?```.
 
 This app is a work in progress. It has been in use at a single nursing home, and seems to work reasonably well. Below are some questions I would like to have answers to:
 
