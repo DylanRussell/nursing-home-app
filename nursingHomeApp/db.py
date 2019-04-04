@@ -1,8 +1,11 @@
 from flask import current_app
-from nursingHomeApp import mysql
+from nursingHomeApp import mysql, bcrypt
 
 CREATE_TRIGGER = """CREATE TRIGGER `%s` AFTER %s ON `%s` FOR EACH ROW
 INSERT INTO %s SELECT (NULL) as pkey, p.* FROM %s p WHERE p.id =  NEW.id"""
+
+INSERT_ADMIN_USER = """INSERT INTO user (role, first, last, email, password, 
+email_confirmed, active, create_user) VALUES ('Site Admin', %s, %s, %s, %s, 1, 1, 0)"""
 
 
 def recreate_db(audit_tables=False):
@@ -51,4 +54,12 @@ def add_fake_data():
         lines = f.read().decode('utf8').split(';')
         for line in lines:
             cursor.execute(line)
+    mysql.connection.commit()
+
+
+def add_admin_user(first, last, email, password):
+    """INSERTs a user with the role of Site Admin into the user table"""
+    cursor = mysql.connection.cursor()
+    password = bcrypt.generate_password_hash(password)
+    cursor.execute(INSERT_ADMIN_USER, (first, last, email, password))
     mysql.connection.commit()

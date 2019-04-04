@@ -3,7 +3,7 @@ from warnings import filterwarnings
 from flask_script import Manager
 import MySQLdb as mdb
 from nursingHomeApp import create_app
-from nursingHomeApp.db import recreate_db, setup_general, add_fake_data
+from nursingHomeApp.db import recreate_db, setup_general, add_fake_data, add_admin_user
 from nursingHomeApp.send_notifications import send_notifications
 
 
@@ -44,7 +44,16 @@ def recreate(audit_trail=False):
 @manager.command
 def fake_data():
     """
-    Adds fake data to the database.
+    INSERTs some fake data to the database.
+    This will create 4 different users, with 4 different roles you can use to login.
+
+    pw: abc123
+
+    usernames:
+    test@physician.com
+    test@clerk.com
+    test@facilityadmin.com
+    test@siteadmin.com
     """
     add_fake_data()
 
@@ -57,6 +66,20 @@ def setup(audit_trail=False):
     of database triggers are created to populate the audit trail tables.
     """
     setup_general(audit_trail)
+
+
+@manager.option('-f', '--fname', dest='first', default='john', help='First Name')
+@manager.option('-l', '--lname', dest='last', default='doe', help='Last Name')
+@manager.option('-e', '--email', dest='email', help='Email (Username)', required=True)
+@manager.option('-p', '--pword', dest='password', help='Password', required=True)
+def create_admin_user(first, last, email, password):
+    """
+    Adds a site admin user to the user table. This is useful because it is 
+    impossible to add a user from the web app without first logging in - which
+    is impossible without having been added as a user... Running the fake_data
+    command also creates some users (amongst other things) you can login with.
+    """
+    add_admin_user(first, last, email, password)
 
 
 if __name__ == '__main__':
