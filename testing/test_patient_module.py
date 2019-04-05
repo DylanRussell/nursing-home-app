@@ -47,7 +47,7 @@ class TestPatientModule(BaseTestCase):
         del form_data['priorVisit']
         del form_data['lastVisit']
         response = self.client.post('/add/patient', data=form_data, follow_redirects=True)
-        err_msg = "The last visit date and last doctor visit date are required"
+        err_msg = b"The last visit date and last doctor visit date are required"
         self.assertIn(err_msg, response.get_data())
 
 

@@ -28,7 +28,7 @@ class TestNotificationModule(BaseTestCase):
             form_data['numDays'] = '-8'
             response = self.client.post('/notifications', data=form_data,
                                         follow_redirects=True)
-            self.assertIn('This field must contain a positive integer.', response.get_data())
+            self.assertIn(b'This field must contain a positive integer.', response.get_data())
             form_data['numDays'] = '8'
             # daysBefore must be negative. this field represents number of days
             # before an overdue visit a text notification should be sent by
@@ -36,7 +36,7 @@ class TestNotificationModule(BaseTestCase):
             form_data['daysBefore'] = '8'
             response = self.client.post('/notifications', data=form_data,
                                         follow_redirects=True)
-            self.assertIn('This field must contain a negative integer.', response.get_data())
+            self.assertIn(b'This field must contain a negative integer.', response.get_data())
 
 
     def test_opt_out(self):
@@ -44,7 +44,7 @@ class TestNotificationModule(BaseTestCase):
         notifications without ever logging in / creating a password
         """
         physician_user_id = 3
-        msg = 'You have been opted out of all notifications.'
+        msg = b'You have been opted out of all notifications.'
         response = self.client.get('/opt/out/%s' % physician_user_id, 
                                    follow_redirects=True)
         self.assertIn(msg, response.get_data())

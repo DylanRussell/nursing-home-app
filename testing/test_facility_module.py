@@ -16,7 +16,7 @@ class TestFacilityModule(BaseTestCase):
                      'floors': '5', 'active': 'y'}
         response = self.client.post('/add/facility', data=form_data,
                                     follow_redirects=True)
-        self.assertIn('Successfully Added Facility', response.get_data())
+        self.assertIn(b'Successfully Added Facility', response.get_data())
         # should now see facility in facility table
         with self.app.app_context():
             cursor = mysql.connection.cursor()
@@ -34,7 +34,7 @@ class TestFacilityModule(BaseTestCase):
         form_data = {'doctors': str(doctor_id)}
         response = self.client.post('/add/clinicians', data=form_data,
                                     follow_redirects=True)
-        msg = 'Added 1 doctors and 0 nurses to your facility!'
+        msg = b'Added 1 doctors and 0 nurses to your facility!'
         self.assertIn(msg, response.get_data())
         # should now see this doctor user belongs to facility 1
         with self.app.app_context():

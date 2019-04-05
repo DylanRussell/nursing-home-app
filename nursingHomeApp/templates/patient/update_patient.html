@@ -17,7 +17,10 @@
 {% block scripts %}
 {{super()}}
 <script type="text/javascript">
-  $('#skilledVisits').prop('disabled', true)
+  // number of consecutive skilled visits only applicable if patient is in skilled care (status 2)
+  if ($('#status').val() != '2') {
+    $('#skilledVisits').prop('disabled', true)
+  };
   $('#status').change(function(){
   	if ($('#status').val() == '2') {
   		$('#skilledVisits').prop('disabled', false)

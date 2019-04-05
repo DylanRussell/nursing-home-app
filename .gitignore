@@ -25,4 +25,4 @@ logs/
 
 # ignore venv
 
-venv/
+env/

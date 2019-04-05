@@ -12,12 +12,12 @@ class TestRegistrationModule(BaseTestCase):
     def test_login(self):
         """Test All Possible Login Scenarios"""
         options = [
-            ('', 'abc123', 'This field is required.', False),
-            ('test@clerk.com', '', 'This field is required.', False),
+            ('', 'abc123', b'This field is required.', False),
+            ('test@clerk.com', '', b'This field is required.', False),
             ('doesnotexist@gmail.com', 'abab', 
-             'This e-mail is not associated with an account', False),
-            ('test@clerk.com', 'badpassword', 'Incorrect Password', False),
-            ('test@clerk.com', 'abc123', 'You Have Been Logged In!', True)
+             b'This e-mail is not associated with an account', False),
+            ('test@clerk.com', 'badpassword', b'Incorrect Password', False),
+            ('test@clerk.com', 'abc123', b'You Have Been Logged In!', True)
             ]
         for email, pword, message, authenticated in options:
             # preserve request context and session - required to keep current_user object around
@@ -34,7 +34,7 @@ class TestRegistrationModule(BaseTestCase):
             # add_patient view has the login_required decorator, so it cannot be
             # accessed without being logged in
             response = self.client.get('/add/patient', follow_redirects=True)
-            self.assertIn('You must be logged in to view this page.', response.get_data())
+            self.assertIn(b'You must be logged in to view this page.', response.get_data())
             # user should be redirected to login page
             self.assertEqual(request.path, url_for('registration.login'))
         with self.app.app_context():
@@ -48,7 +48,7 @@ class TestRegistrationModule(BaseTestCase):
             # get the bit mask representing which views the clerk can access
             cursor.execute("SELECT role_value FROM user_role WHERE role='Clerk'")
             clerk_mask = cursor.fetchall()[0][0]
-        access_denied = 'You are not authorized to view this page.'
+        access_denied = b'You are not authorized to view this page.'
         # login as clerk
         self.login_user()
         with self.client:
@@ -78,9 +78,9 @@ class TestRegistrationModule(BaseTestCase):
         self.login_user('test@facilityadmin.com', 'abc123')
 
         options = [
-            (2, 'Cannot add or remove yourself.'),  # test@facilityadmin user
-            (1, 'Users status has been updated.'),  # test@clerk user
-            (4, 'You are not allowed to add or remove this type of user.') # test@siteadmin user
+            (2, b'Cannot add or remove yourself.'),  # test@facilityadmin user
+            (1, b'Users status has been updated.'),  # test@clerk user
+            (4, b'You are not allowed to add or remove this type of user.') # test@siteadmin user
         ]
         for userid, message in options:
             response = self.client.get('/toggle/%s' % userid, 
@@ -113,7 +113,7 @@ class TestRegistrationModule(BaseTestCase):
         """test the add_user endpoint"""
         pword = 'abc123'
         # Nurse/Physician Users don't have permission to view the add_user page
-        unauthorized = 'You are not authorized to view this page.'
+        unauthorized = b'You are not authorized to view this page.'
         self.login_user('test@physician.com', pword)
         response = self.client.get('/add/user', follow_redirects=True)
         self.assertIn(unauthorized, response.get_data())
@@ -134,7 +134,7 @@ class TestRegistrationModule(BaseTestCase):
                 # add physician user
                 response = self.client.post('/add/user', data=form_data, 
                                             follow_redirects=True)
-                self.assertIn('User successfully added!', response.get_data())
+                self.assertIn(b'User successfully added!', response.get_data())
                 # when user is added an email is sent to them asking for sign up,
                 # actual email sending suppressed during testing, see here:
                 # https://pythonhosted.org/Flask-Mail/
@@ -162,7 +162,7 @@ class TestRegistrationModule(BaseTestCase):
         form_data['role'] = 'Site Admin'
         response = self.client.post('/add/user', data=form_data, 
                                     follow_redirects=True)
-        self.assertIn('Not a valid choice', response.get_data())
+        self.assertIn(b'Not a valid choice', response.get_data())
 
 
 
