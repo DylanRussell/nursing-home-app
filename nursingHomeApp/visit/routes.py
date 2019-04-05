@@ -1,6 +1,5 @@
-from __future__ import absolute_import
 from datetime import timedelta, datetime
-import StringIO
+import io
 from flask import render_template, flash, request, jsonify, Response
 from flask_login import current_user
 import xlsxwriter
@@ -89,7 +88,7 @@ def write_to_xlsx(rows):
                "Next Required Doctor Visit", "Doctor", "Last Visit by APRN",
                "Last Visit by Doctor"]
     # Create an in-memory output file for the new workbook.
-    output = StringIO.StringIO()
+    output = io.StringIO()
     # Create workbook
     workbook = xlsxwriter.Workbook(output, {'in_memory': True})
     sheet = workbook.add_worksheet('Upcoming Visits')

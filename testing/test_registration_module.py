@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import unittest
 from flask import request, url_for
 from flask_login import current_user

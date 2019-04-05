@@ -35,7 +35,7 @@ class AddPatientForm(FlaskForm):
                          validators=[DataRequired(), check_if_required],
                          choices=get_add_status_choices, coerce=int)
     skilledVisits = SelectField('Number of Prior Skilled Visits',
-                                choices=zip(range(3), range(3)), coerce=int)
+                                choices=list(zip(range(3), range(3))), coerce=int)
     md = SelectField("Patient's Physician", validators=[DataRequired()],
                      choices=get_all_mds, coerce=int)
     np = SelectField("Patient's APRN", validators=[Optional()],
@@ -67,7 +67,7 @@ class UpdatePatientForm(FlaskForm):
                                                        can_status_change],
                          choices=get_update_status_choices, coerce=int)
     skilledVisits = SelectField('Number of Prior Skilled Visits',
-                                choices=zip(range(3), range(3)), coerce=int)
+                                choices=list(zip(range(3), range(3))), coerce=int)
     md = SelectField("Patient's Physician", validators=[DataRequired()], 
                      choices=get_all_mds, coerce=int)
     np = SelectField("Patient's APRN", validators=[Optional()], 

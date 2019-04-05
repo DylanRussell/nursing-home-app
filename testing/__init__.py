@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import unittest
 from nursingHomeApp import create_app
 from nursingHomeApp.db import recreate_db, setup_general, add_fake_data

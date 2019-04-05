@@ -1,6 +1,5 @@
-from __future__ import absolute_import
 from functools import wraps
-from urlparse import urlparse, urljoin
+from urllib.parse import urlparse, urljoin
 from flask import render_template, request, url_for, flash, redirect, current_app, jsonify
 from flask_login import logout_user, login_user, current_user
 from flask_mail import Message
@@ -536,7 +535,7 @@ class User(object):
         return False
 
     def get_id(self):
-        return unicode(self.id)
+        return str(self.id)
 
     def __repr__(self):
         return '<User %r>' % (self.email)

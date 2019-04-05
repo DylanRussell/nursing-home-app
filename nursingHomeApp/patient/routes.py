@@ -1,6 +1,5 @@
-from __future__ import absolute_import
 import csv
-import StringIO
+import io
 from flask import render_template, flash, redirect, url_for, request,\
     make_response
 from flask_login import current_user
@@ -102,7 +101,7 @@ def view_patients():
         # remove last field from patient row which is the patient_id field
         rows = header + [patient[:-1] for patient in patients]
         # in memory file object
-        output = StringIO.StringIO()
+        output = io.StringIO()
         writer = csv.writer(output)
         writer.writerows(rows)
         response = make_response(output.getvalue())

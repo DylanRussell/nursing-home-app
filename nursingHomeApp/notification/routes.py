@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from flask import render_template, url_for, flash, redirect
 from flask_login import current_user
 from twilio.twiml.messaging_response import MessagingResponse
