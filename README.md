@@ -19,9 +19,11 @@ $ cd nursing-home-app
 
 ##### Initialize a virtualenv
 
+Note: This app requires python v3+
+
 ```
 $ pip install virtualenv
-$ virtualenv -p python2 env
+$ virtualenv -p python env
 $ source env/bin/activate
 ```
 ##### Install the dependencies
@@ -47,13 +49,20 @@ The [CLI manager](manage.py) used below, by default passes the filename 'nursing
 $ python manage.py recreate
 ```
 
-#### Other setup (e.g. creating roles in database)
+#### Other required setup (e.g. creating roles in database)
+
 
 ```
 $ python manage.py setup
 ```
 
-#### [Optional] Add fake data to the database
+#### Create a site admin user
+
+```
+python manage.py create_admin_user -f YourFirstName -l YourLastName -e YourEmail -p YourPassword
+```
+
+#### [Test / Development Only] Add test data to the database
 
 ```
 $ python manage.py fake_data
@@ -159,6 +168,12 @@ To view a full list of commands and arguments run ```python manage.py -?```.
 
 This app is a work in progress. It has been in use at a single nursing home, and seems to work reasonably well. Below are some questions I would like to have answers to:
 
-What exactly is required by HIPPA?
+What exactly is required by HIPAA?
 What are other nursing homes using to ensure visits are made on time?
 How do the requirements around visits change from facility to facility or state to state?
+
+Ideas for new features:
+
+A way for the end user to configure the requirements around when a visit must occur and who (Doctor or Nurse) should administer it. Right now this logic is hardcoded into the app.
+
+A way for the user to see if a facility has been meeting it's visit requirements.
