@@ -7,7 +7,6 @@ It is used to help facilities comply with the regulatory requirements around fre
 A single instance of the app can support use by multiple facilities.
 It can be configured to send out SMS or email reminders when a patient visit is overdue.
 
-
 ## Setting up
 
 ##### Clone the repo
@@ -19,13 +18,10 @@ $ cd nursing-home-app
 
 ##### Initialize a virtualenv
 
-Note: This app requires python v3+
+This app requires python v3.6.
 
-```
-$ pip install virtualenv
-$ virtualenv -p python env
-$ source env/bin/activate
-```
+How to create/activate a virtualenv described [here](https://docs.python.org/3/library/venv.html)
+
 ##### Install the dependencies
 
 ```
@@ -42,7 +38,6 @@ I am using the [app factory](http://flask.pocoo.org/docs/1.0/patterns/appfactori
 
 The [CLI manager](manage.py) used below, by default passes the filename 'nursingHomeApp.config_dev.py' to the create_app function. Make use of the -c argument if you want the app or associated scripts to run with a different config file.
 
-
 ##### Create the database & schema
 
 ```
@@ -50,7 +45,6 @@ $ python manage.py recreate
 ```
 
 #### Other required setup (e.g. creating roles in database)
-
 
 ```
 $ python manage.py setup
@@ -68,7 +62,7 @@ python manage.py create_admin_user -f YourFirstName -l YourLastName -e YourEmail
 $ python manage.py fake_data
 ```
 
-This will create 4 different users, with 4 different roles you can use to login.
+This will create 4 different users (amongst other things), with 4 different roles you can use to login.
 
 pw: abc123
 
@@ -85,7 +79,6 @@ $ python manage.py test
 ```
 
 ## More detail
-
 
 #### Permissions / User Roles
 
@@ -106,7 +99,6 @@ There are currently 6 different user roles.
 ```Site Admin``` can access every view, and can remove (set inactive) or add a user of any other role.
 
 ```Facility Admin``` is similar to ```Site Admin``` in that they can access every view, but the data shown will be limited to the ```facility``` the user belongs to. Also they will only be able to add or remove user's belonging to their ```facility```
-
 
 #### Registration
 
@@ -138,7 +130,6 @@ For now only Physician users receieve notifications. Twilio is used for sending 
 
 See the [send_notifications.py script](nursingHomeApp/send_notifications.py) for how the notification table is used in sending out email/text notifications. This script is run via a cron job every 30 minutes (see [here](.ebextensions) for more on how this is configured).
 
-
 #### Facility
 
 This module hasn't received very much use yet, as the web app has only been used by a single nursing facility (instead of a group of facilities). The idea is that multiple facilities can use a single version of the web application / MySQL database at the same time. This module is mostly for adding/updating/viewing the facility table and the user_to_facility mapping table.
@@ -157,7 +148,6 @@ This module is for adding/updating/viewing visits, and is mostly used by Clerk u
 
 One tricky piece of logic the app keeps track of here: a patient with a status of 'Skilled Care / New Admission' is moved to the 'Long Term Care' status after 3 consecutive 30 day visits. This is the only status that changes after a set number of visits. The logic for this is contained in the [/submit/upcoming route](nursingHomeApp/visit/routes.py).
 
-
 #### Other
 
 Create audit trail tables, and triggers to populate the tables by including the -a option when running the recreate or setup commands (i.e. ```python manage.py recreate -a```). For each of the 5 tables a user can modify (facility, user, notification, patient, visit) an audit trail table with the same schema will be created, and ON UPDATE/INSERT triggers will be created to populate those tables.
@@ -174,6 +164,6 @@ How do the requirements around visits change from facility to facility or state 
 
 Ideas for new features:
 
-A way for the end user to configure the requirements around when a visit must occur and who (Doctor or Nurse) should administer it. Right now this logic is hardcoded into the app.
+A way for the user to configure the requirements around when a visit must occur and who (Doctor or Nurse) should administer it. Right now this logic is hardcoded into the app.
 
 A way for the user to see if a facility has been meeting it's visit requirements.
