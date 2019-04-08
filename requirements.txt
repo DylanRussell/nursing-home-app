@@ -10,6 +10,7 @@ Flask-WTF==0.14.2
 pytz==2017.3
 tabulate==0.7.5
 twilio==6.10.1
+werkzeug==0.14.1
 WTForms==2.1
 WTForms-Components==0.10.3
 XlsxWriter==1.1.2
