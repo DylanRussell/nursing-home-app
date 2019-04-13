@@ -122,9 +122,10 @@ def logout():
     return redirect(url_for('registration.login'))
 
 
-@bp.errorhandler(500)
+@bp.app_errorhandler(500)
 def page_not_found(e):
-    """Page shown to user on error code 500 (internal server error)"""
+    """Page shown to user on error code 500 (internal server error).
+    Used for all requests, not just those specific to this Blueprint."""
     return render_template('registration/500.html'), 500
 
 
@@ -218,6 +219,10 @@ def add_user():
     """
     form = AddUserForm()
     form.role.choices = [(x, x) for x in CAN_ADD[current_user.role]]
+    # Site Admin must select a facility for the new user they are adding,
+    # Otherwise the new user is assumed to belong to the facility of the user who added them
+    if current_user.role != 'Site Admin':
+        del form.facility
     if form.validate_on_submit():
         userid = create_user(form)
         msg = Message("Sign Up For visitMinder", recipients=[form.email.data])
