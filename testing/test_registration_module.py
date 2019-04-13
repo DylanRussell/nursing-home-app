@@ -25,6 +25,7 @@ class TestRegistrationModule(BaseTestCase):
                 response = self.login_user(email, pword)
                 self.assertIn(message, response.get_data())
                 self.assertTrue(current_user.is_authenticated == authenticated)
+                self.logout()
 
     def test_login_required_decorator(self):
         """Test the view decorator used to restrict access to a view based on 
