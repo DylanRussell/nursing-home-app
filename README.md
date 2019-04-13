@@ -18,7 +18,7 @@ $ cd nursing-home-app
 
 ##### Initialize a virtualenv
 
-This app requires python v3.6.
+This app requires python v3.6+.
 
 How to create/activate a virtualenv described [here](https://docs.python.org/3/library/venv.html)
 
