@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import logging
 from logging.handlers import SMTPHandler, RotatingFileHandler
 import os
@@ -8,7 +7,7 @@ from flask_bootstrap import Bootstrap
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_mysqldb import MySQL
-from flask_sslify import SSLify
+from flask_talisman import Talisman
 
 
 lm = LoginManager()
@@ -17,12 +16,21 @@ mysql = MySQL()
 bcrypt = Bcrypt()
 mail = Mail()
 
+csp = {
+    'default-src': [
+        '\'self\'',
+        '*.cloudflare.com',
+        '*.datatables.net'
+    ]
+}
+
 
 def create_app(config_file='nursingHomeApp.config_dev'):
     """App factory function"""
     app = Flask(__name__)
     app.config.from_object(config_file)
     Bootstrap(app)
+    Talisman(app, content_security_policy=csp)
     lm.init_app(app)
     mysql.init_app(app)
     bcrypt.init_app(app)
@@ -36,7 +44,6 @@ def create_app(config_file='nursingHomeApp.config_dev'):
         app.register_blueprint(bp)
 
     if not app.debug and not app.testing:
-        SSLify(app)
         auth = (app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
         mail_handler = SMTPHandler(
             mailhost=(app.config['MAIL_SERVER'], app.config['MAIL_PORT']),
