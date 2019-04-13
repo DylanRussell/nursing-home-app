@@ -16,10 +16,5 @@
 {% endblock %}
 {% block scripts %}
 {{super()}}
-<script type="text/javascript">
-  // https://select2.github.io/examples.html
-  $(document).ready(function(){
-    $("select").select2({});
-  });
-</script>
+<script type="text/javascript" src="{{url_for('static', filename='add_clinicians.js')}}"></script>
 {% endblock %}

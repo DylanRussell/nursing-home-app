@@ -14,12 +14,3 @@
 {% endblock %}
 </div> <!-- /container -->
 {% endblock %}
-{% block scripts %}
-{{super()}}
-<script type="text/javascript">
-  var role = "{{current_user.role}}";
-  if (role != 'Site Admin') {
-    $('#facility').parent().parent().hide();
-  }
-</script>
-{% endblock %}
