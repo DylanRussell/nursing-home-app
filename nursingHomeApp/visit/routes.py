@@ -7,6 +7,7 @@ from nursingHomeApp import mysql
 from nursingHomeApp.visit import bp
 from nursingHomeApp.common_queries import get_num_floors, get_user_facility_id
 from nursingHomeApp.registration.routes import login_required
+from werkzeug.datastructures import Headers
 
 
 SELECT_CLINICIANS = """SELECT CONCAT_WS(' ', u.first, u.last) FROM user u
@@ -88,8 +89,9 @@ def write_to_xlsx(rows):
                "Next Required Doctor Visit", "Doctor", "Last Visit by APRN",
                "Last Visit by Doctor"]
     # Create an in-memory output file for the new workbook.
-    output = io.StringIO()
+    output = io.BytesIO()
     # Create workbook
+    file_name = 'Upcoming_Visits_{}.xlsx'.format(datetime.now())
     workbook = xlsxwriter.Workbook(output, {'in_memory': True})
     sheet = workbook.add_worksheet('Upcoming Visits')
     # Create formats
@@ -109,10 +111,10 @@ def write_to_xlsx(rows):
     # Flask response
     response = Response(output.read(), 200)
 
-    file_name = 'Upcoming_Visits_{}.xlsx'.format(datetime.now())
+    
 
     # HTTP headers for forcing file download
-    response.headers = {
+    response.headers = Headers({
         'Pragma': 'public',
         'Expires': '0',
         'Cache-Control': 'must-revalidate, private',
@@ -120,7 +122,7 @@ def write_to_xlsx(rows):
         'Content-Disposition': 'attachment; filename="%s";' % file_name,
         'Content-Transfer-Encoding': 'binary',
         'Content-Length': len(response.data)
-        }
+        })
     return response
 
 
@@ -225,8 +227,7 @@ def upcoming_for_clerk():
     return render_template('visit/upcoming_for_clerk.html', 
                            numFloors=get_num_floors(), patients=patients,
                            today=datetime.now().strftime('%Y-%m-%d'),
-                           clinicians=get_clinicians(),
-                           curFloor=current_user.floor)
+                           clinicians=get_clinicians())
 
 
 def get_prior_visits():
