@@ -2,7 +2,8 @@ from wtforms.validators import ValidationError, StopValidation
 from nursingHomeApp import mysql, bcrypt
 
 
-IS_EMAIL_VALID = "SELECT * FROM user WHERE email=%s AND password IS NOT NULL"
+IS_EMAIL_VALID = "SELECT * FROM user WHERE email=%s"
+USER_HAS_PW = "SELECT password FROM user WHERE email=%s"
 SELECT_PW = "SELECT password FROM user WHERE email=%s"
 DOES_EMAIL_EXIST = "SELECT * FROM user WHERE email=%s"
 
@@ -11,6 +12,14 @@ def is_valid_email(form, field):
     cursor = mysql.connection.cursor()
     if not cursor.execute(IS_EMAIL_VALID, (form.email.data,)):
         raise StopValidation('This e-mail is not associated with an account')
+
+
+def has_selected_pw(form, field):
+    cursor = mysql.connection.cursor()
+    cursor.execute(USER_HAS_PW, (form.email.data,))
+    pw = cursor.fetchall()[0][0]
+    if pw is None:
+        raise StopValidation('Please select a password before trying to login. Check your e-mail for a signup link from visitminder.')
 
 
 def is_valid_pw(form, field):

@@ -4,7 +4,7 @@ from wtforms.fields.html5 import EmailField, TelField
 from wtforms.validators import DataRequired
 from wtforms_components import SelectField
 from nursingHomeApp.registration.validators import is_email_unique,\
-    is_same_pw, is_valid_pw, is_valid_email, email_exists
+    is_same_pw, is_valid_pw, is_valid_email, email_exists, has_selected_pw
 from nursingHomeApp.common_queries import get_facilities
 from nursingHomeApp.common_validators import is_valid_phone
 
@@ -27,7 +27,7 @@ class PasswordForm(FlaskForm):
 
 class LoginForm(FlaskForm):
     email = EmailField('email', validators=[DataRequired(), is_valid_email])
-    pw = PasswordField('password', validators=[DataRequired(), is_valid_pw])
+    pw = PasswordField('password', validators=[DataRequired(), has_selected_pw, is_valid_pw])
     submit = SubmitField('Login')
 
 
