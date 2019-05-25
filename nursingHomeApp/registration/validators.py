@@ -16,10 +16,10 @@ def is_valid_email(form, field):
 
 def has_selected_pw(form, field):
     cursor = mysql.connection.cursor()
-    cursor.execute(USER_HAS_PW, (form.email.data,))
-    pw = cursor.fetchall()[0][0]
-    if pw is None:
-        raise StopValidation('Please select a password before trying to login. Check your e-mail for a signup link from visitminder.')
+    if cursor.execute(USER_HAS_PW, (form.email.data,)):
+        if cursor.fetchall()[0][0] is None:
+            raise StopValidation(('Please select a password before trying to login. ' 
+                                  'Check your e-mail for a signup link from visitminder.'))
 
 
 def is_valid_pw(form, field):
