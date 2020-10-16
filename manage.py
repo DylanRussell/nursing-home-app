@@ -3,7 +3,7 @@ from warnings import filterwarnings
 from flask_script import Manager
 import MySQLdb as mdb
 from nursingHomeApp import create_app
-from nursingHomeApp.db import recreate_db, setup_general, add_fake_data, add_admin_user
+from nursingHomeApp.db import recreate_db, setup_general, add_fake_data, add_admin_user, add_user
 from nursingHomeApp.send_notifications import send_notifications
 
 
@@ -80,6 +80,14 @@ def create_admin_user(first, last, email, password):
     command also creates some users (amongst other things) you can login with.
     """
     add_admin_user(first, last, email, password)
+
+@manager.option('-f', '--fname', dest='first', default='john', help='First Name')
+@manager.option('-l', '--lname', dest='last', default='doe', help='Last Name')
+@manager.option('-e', '--email', dest='email', help='Email (Username)', required=True)
+@manager.option('-p', '--pword', dest='password', help='Password', required=True)
+@manager.option('-u', '--userType', dest='userType', help='User Type', required=True)
+def create_user(first, last, email, password):
+    add_user(first, last, email, password, userType)
 
 
 if __name__ == '__main__':

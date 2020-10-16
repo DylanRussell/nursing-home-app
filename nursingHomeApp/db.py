@@ -7,6 +7,12 @@ INSERT INTO %s SELECT (NULL) as pkey, p.* FROM %s p WHERE p.id =  NEW.id"""
 INSERT_ADMIN_USER = """INSERT INTO user (role, first, last, email, password, 
 email_confirmed, active, create_user) VALUES ('Site Admin', %s, %s, %s, %s, 1, 1, 0)"""
 
+INSERT_USER = """INSERT INTO user (role, first, last, email, password, 
+email_confirmed, active, create_user) VALUES (%s, %s, %s, %s, %s, 1, 1, 0)"""
+
+INSERT_USER_TO_FACILITY_MAPPING = """INSERT INTO user_to_facility (user_id,
+facility_id, create_user, update_user) VALUES (%s, 0, 0, 0)"""
+
 
 def recreate_db(audit_tables=False):
     """Clear existing database and create new database/tables."""
@@ -63,3 +69,13 @@ def add_admin_user(first, last, email, password):
     password = bcrypt.generate_password_hash(password)
     cursor.execute(INSERT_ADMIN_USER, (first, last, email, password))
     mysql.connection.commit()
+
+def add_user(first, last, email, password, userType):
+    """INSERTs a user with the role of userType into the user table"""
+    cursor = mysql.connection.cursor()
+    password = bcrypt.generate_password_hash(password)
+    cursor.execute(INSERT_USER, (userType, first, last, email, password))
+    mysql.connection.commit()
+    cursor.execute(INSERT_USER_TO_FACILITY_MAPPING, (cursor.lastrowid,))
+    mysql.connection.commit()
+
