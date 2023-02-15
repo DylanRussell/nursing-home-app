@@ -13,4 +13,4 @@ twilio==6.10.1
 WTForms==2.1
 WTForms-Components==0.10.3
 XlsxWriter==1.1.2
-Werkzeug==0.16
+Werkzeug==2.2.3
